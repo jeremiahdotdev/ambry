@@ -102,7 +102,7 @@
 
 .search-header h1 {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: baseline;
     gap: 0.18em;
@@ -118,6 +118,7 @@
 
 .search-header h1 span {
     display: inline-flex;
+    white-space: nowrap;
 }
 
 .search-rule {

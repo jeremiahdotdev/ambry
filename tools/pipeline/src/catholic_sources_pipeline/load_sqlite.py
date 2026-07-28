@@ -105,7 +105,10 @@ def _merge_holy_people_rows(
         if reviewed_type == "not_holy_person":
             continue
 
-        if reviewed_type not in {"saint", "blessed", "venerable", "pope", "church_father", "holy_person"}:
+        if reviewed_type == "church_father":
+            reviewed_type = "saint"
+
+        if reviewed_type not in {"saint", "blessed", "venerable", "pope", "holy_person"}:
             continue
 
         merged_row = {**row}

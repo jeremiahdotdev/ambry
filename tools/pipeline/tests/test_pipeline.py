@@ -436,6 +436,7 @@ class PipelineSmokeTest(unittest.TestCase):
         self.assertEqual("saint", payload["tables"]["holy_people"][0]["type"])
         self.assertEqual("blessed", payload["tables"]["holy_people"][1]["type"])
         self.assertEqual("St. Source Article", payload["tables"]["holy_people"][0]["primary_name"])
+        self.assertEqual("Sample Person", payload["tables"]["holy_people"][1]["primary_name"])
         self.assertTrue(payload["tables"]["holy_people"][0]["is_martyr"])
         self.assertTrue(payload["tables"]["holy_people"][0]["is_doctor"])
 
@@ -471,6 +472,7 @@ class PipelineSmokeTest(unittest.TestCase):
         agnellus, adalard, adelaide = payload["tables"]["holy_people"]
 
         self.assertEqual("blessed", agnellus["type"])
+        self.assertEqual("Agnellus of Pisa", agnellus["primary_name"])
         self.assertEqual(1195, agnellus["birth_year"])
         self.assertEqual("circa", agnellus["birth_year_qualifier"])
         self.assertEqual(1236, agnellus["death_year"])

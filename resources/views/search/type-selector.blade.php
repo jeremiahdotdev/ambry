@@ -31,7 +31,6 @@
             data-search-type-option
             data-value="{{ $value }}"
             data-plural="{{ match ($value) {
-                'church_father' => 'church fathers',
                 'blessed' => 'blesseds',
                 'pope' => 'popes',
                 'venerable' => 'venerables',

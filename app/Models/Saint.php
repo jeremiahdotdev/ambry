@@ -88,7 +88,6 @@ class Saint extends Model
             'pope' => 'Pope',
             'blessed' => 'Blessed',
             'venerable' => 'Venerable',
-            'church_father' => 'Church Father',
             'holy_person' => 'Holy Person',
             default => Str::of((string) $this->canonical_status)
                 ->replace('_', ' ')

@@ -15,7 +15,6 @@ class SearchController extends Controller
         'pope' => 'Pope',
         'blessed' => 'Blessed',
         'venerable' => 'Venerable',
-        'church_father' => 'Church Father',
     ];
 
     private const POPULAR_SEARCHES = [

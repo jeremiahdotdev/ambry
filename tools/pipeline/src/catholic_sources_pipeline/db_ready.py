@@ -250,7 +250,7 @@ def _holy_person_from_source_document(
     if person_type is None:
         return None
 
-    primary_name = clean_title
+    primary_name = _primary_name_for_type(clean_title, person_type)
     life_dates = _extract_life_dates(text)
     gender = _infer_gender(primary_name, text)
 
@@ -304,6 +304,16 @@ def _canonical_status_for_type(person_type: str) -> str:
         return person_type
 
     return "unknown"
+
+
+def _primary_name_for_type(title: str, person_type: str) -> str:
+    if person_type == "blessed":
+        return re.sub(r"^(?:Bl\.?|Blessed)\s+", "", title, count=1, flags=re.IGNORECASE).strip()
+
+    if person_type == "venerable":
+        return re.sub(r"^(?:Ven\.?|Venerable)\s+", "", title, count=1, flags=re.IGNORECASE).strip()
+
+    return title
 
 
 def _infer_gender(title: str, text: str) -> str | None:

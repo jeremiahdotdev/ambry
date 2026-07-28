@@ -42,7 +42,7 @@ class SaintController extends Controller
     {
         return [
             'id' => $saint->id,
-            'name' => $saint->canonical_status === 'pope' ? $saint->displayName() : $saint->primary_name,
+            'name' => $saint->displayName(),
             'slug' => $saint->slug,
             'biography' => $saint->displayBiography(),
             'birth_year' => $saint->birth_year,

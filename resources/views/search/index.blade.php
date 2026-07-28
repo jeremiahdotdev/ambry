@@ -19,7 +19,6 @@
     @php
         $selectedTypeLabel = $searchTypes[$selectedType] ?? 'Saint';
         $selectedTypePlural = match ($selectedType) {
-            'church_father' => 'Church Fathers',
             'blessed' => 'Blesseds',
             'pope' => 'Popes',
             'venerable' => 'Venerables',

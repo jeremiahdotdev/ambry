@@ -18,7 +18,9 @@ class SaintDiscoveryTest extends TestCase
             ->assertOk()
             ->assertSee('Ambry')
             ->assertSee('Search by name, virtue, or keyword')
-            ->assertSee('Search saints...');
+            ->assertSee('Search saints...')
+            ->assertDontSee('Church Father')
+            ->assertDontSee('Church Fathers');
     }
 
     public function test_search_populates_saint_entries_after_submit(): void
@@ -271,6 +273,29 @@ class SaintDiscoveryTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.name', 'Leo I')
             ->assertJsonPath('data.biography', 'Doctor of the Church and bishop of Rome.');
+    }
+
+    public function test_api_returns_cleaned_blessed_and_venerable_names(): void
+    {
+        Saint::create([
+            'primary_name' => 'Bl. Adrian Fortescue',
+            'slug' => 'bl-adrian-fortescue',
+            'canonical_status' => 'blessed',
+        ]);
+
+        Saint::create([
+            'primary_name' => 'Ven. Mary Ward',
+            'slug' => 'ven-mary-ward',
+            'canonical_status' => 'venerable',
+        ]);
+
+        $this->getJson('/api/saints/bl-adrian-fortescue')
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Adrian Fortescue');
+
+        $this->getJson('/api/saints/ven-mary-ward')
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Mary Ward');
     }
 
     public function test_search_results_use_cleaned_biography_excerpt(): void

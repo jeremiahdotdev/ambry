@@ -21,7 +21,6 @@ REVIEW_FIELDS_SCHEMA = {
                 "blessed",
                 "venerable",
                 "pope",
-                "church_father",
                 "holy_person",
                 "not_holy_person",
             ],
@@ -328,8 +327,8 @@ def _review_saint_batch(client: Any, rows: list[dict[str, Any]], model: str) -> 
                     "For patronages, search Catholic.org first and use its patronage wording when available. "
                     "If the entry is a mission, feast, place, organization, concept, title page, or other non-person "
                     "subject, return type=not_holy_person and leave virtues, vices, patronages, roles, life_dates, and image_prompt empty/null. "
-                    "Affirm or correct type as saint, blessed, venerable, pope, church_father, holy_person, or not_holy_person. "
-                    "Use church_father for recognized Fathers of the Church who are not better represented by saint or pope. "
+                    "Affirm or correct type as saint, blessed, venerable, pope, holy_person, or not_holy_person. "
+                    "Recognized Fathers of the Church who are canonized should remain type=saint. "
                     "Use pope for popes where canonization status is not otherwise clear. "
                     "If the candidate is a holy person, return concise lowercase keyword arrays. Virtues must be simple qualities like "
                     "humility, charity, fortitude, zeal, learning, poverty, obedience, perseverance, chastity, courage, "

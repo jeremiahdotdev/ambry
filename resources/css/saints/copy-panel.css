@@ -1,0 +1,60 @@
+.saint-copy-panel {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-self: flex-start;
+    inline-size: calc(100% - 1rem);
+    margin-block-start: 52svh;
+    margin-inline-end: 1rem;
+    padding: 6svh 8vw 4svh;
+    border-top: 1px solid var(--saint-border, var(--color-border));
+    background: var(--saint-card, #f7f8ee);
+    border-radius: 50% 50% 0 0 / 2rem 2rem 0 0;
+    box-shadow: 0 1rem 2rem -1.5rem rgb(32 37 45 / 18%);
+    min-block-size: 50svh;
+}
+
+.saint-intro {
+    margin: 1rem 0 0;
+    color: var(--saint-text, var(--color-foreground));
+    overflow-wrap: break-word;
+    hyphens: auto;
+    text-align: justify;
+    text-align-last: left;
+    text-justify: inter-word;
+}
+
+.saint-intro p {
+    margin: 0;
+}
+
+.saint-intro p + p {
+    margin-block-start: 1em;
+}
+
+.saint-copy-panel > * {
+    position: relative;
+    z-index: 1;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    inline-size: 84vw;
+    margin-inline: auto;
+}
+
+@media (min-width: 781px) {
+    .saint-copy-panel {
+        border: 1px solid var(--saint-border, var(--color-border));
+        margin-block: 12svh 12svh;
+        margin-inline-start: auto;
+        margin-inline-end: 0;
+        inline-size: min(50vw, 50rem);
+        min-block-size: auto;
+        padding: clamp(1.25rem, 3vw, 2.5rem);
+        border-radius: clamp(1rem, 2vw, 1.5rem);
+        box-shadow: 0 1rem 3rem rgb(32 37 45 / 14%);
+        margin-right: 2rem;
+    }
+
+}

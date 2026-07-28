@@ -1,0 +1,63 @@
+.saint-title-block {
+    min-width: 0;
+}
+
+.saint-cross {
+    display: inline-block;
+    margin-inline-end: 0.8em;
+    color: var(--saint-accent, #4e7b68);
+    line-height: 1;
+}
+
+.saint-kicker,
+.saint-subtitle {
+    margin: 0;
+    color: var(--saint-accent, #4e7b68);
+    letter-spacing: 0.22em;
+    line-height: 1.35;
+    text-transform: uppercase;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+.saint-kicker {
+    display: flex;
+    align-items: center;
+}
+
+.saint-title-block h1 {
+    margin: 8px 0;
+    color: var(--saint-text, #143433);
+    line-height: 0.96;
+    text-transform: uppercase;
+}
+
+.saint-divider {
+    content: "";
+    display: block;
+    width: 30%;
+    height: 2px;
+    margin-top: clamp(10px, 2vh, 18px);
+    margin-left:auto;
+    margin-right:auto;
+    background: var(--saint-accent, #4e7b68);
+}
+
+@media (max-width: 780px) {
+    .saint-cross {
+        margin-inline-end: 0.7em;
+    }
+
+    .saint-kicker {
+        letter-spacing: 0.22em;
+    }
+
+    .saint-subtitle {
+        letter-spacing: 0;
+    }
+
+    .saint-subtitle::after {
+        width: 58px;
+        margin: 12px auto 0;
+    }
+}

@@ -1,0 +1,4 @@
+build/
+__pycache__/
+.pytest_cache/
+src/catholic_sources_pipeline/newadvent/

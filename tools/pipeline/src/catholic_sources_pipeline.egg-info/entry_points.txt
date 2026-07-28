@@ -1,0 +1,2 @@
+[console_scripts]
+catholic-sources = catholic_sources_pipeline.cli:main

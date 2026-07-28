@@ -1,0 +1,6 @@
+.saint-profile-body {
+    min-height: 100svh;
+    margin: 0;
+    overflow-x: hidden;
+    background: var(--saint-page-mid, #f6efe2);
+}

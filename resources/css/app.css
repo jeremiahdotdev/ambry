@@ -1,0 +1,277 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+:root {
+    --color-background: #f7f3ea;
+    --color-background-card:#fff6e0;
+    --color-surface: #ffdebc;
+    --color-card: #f7f0e4;
+    --color-foreground: #20252d;
+    --color-muted-foreground: #667085;
+    --color-subtle-foreground: #4f5b6b;
+    --color-border: #ded3c1;
+    --color-input: #d4c8b5;
+    --color-ring: rgb(156 87 45 / 18%);
+    --color-primary: #8b3f1d;
+    --color-primary-hover: #9c572d;
+    --color-primary-foreground: #fffaf0;
+    --color-link: #87421f;
+    --color-danger: #8a1f1f;
+    --color-danger-surface: #fff1f1;
+    --color-danger-border: #e8a5a5;
+    color-scheme: light;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.5;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--color-background);
+    color: var(--color-foreground);
+}
+
+main {
+    width: min(100% - 32px, 1040px);
+    margin: 0 auto;
+    padding: 44px 0;
+}
+
+a {
+    color: var(--color-link);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+.masthead,
+.profile-header {
+    margin-bottom: 24px;
+}
+
+.eyebrow {
+    margin: 0 0 8px;
+    color: var(--color-muted-foreground);
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+h1 {
+    max-width: 860px;
+    margin: 0;
+    font-size: clamp(2rem, 5vw, 4.2rem);
+    line-height: 1.03;
+    letter-spacing: 0;
+}
+
+h2,
+h3 {
+    margin: 0;
+    letter-spacing: 0;
+}
+
+.lede {
+    max-width: 760px;
+    margin: 16px 0 0;
+    color: var(--color-subtle-foreground);
+    font-size: 1.08rem;
+}
+
+.search-panel {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.search-panel input,
+.search-panel select {
+    flex: 1;
+}
+
+label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+input,
+select,
+button {
+    min-height: 48px;
+    border-radius: 6px;
+    font: inherit;
+}
+
+input,
+select {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--color-input);
+    background: var(--color-surface);
+    color: var(--color-foreground);
+    padding: 0 13px;
+}
+
+input:focus,
+select:focus {
+    border-color: var(--color-primary-hover);
+    outline: 3px solid var(--color-ring);
+}
+
+button {
+    border: 0;
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+    cursor: pointer;
+    font-weight: 800;
+    padding: 0 18px;
+}
+
+.message {
+    margin-bottom: 18px;
+    border: 1px solid var(--color-danger-border);
+    border-radius: 6px;
+    background: var(--color-danger-surface);
+    color: var(--color-danger);
+    padding: 12px 14px;
+}
+
+.summary {
+    margin: 0 0 16px;
+    color: var(--color-muted-foreground);
+}
+
+.results {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.result,
+.profile-grid > div,
+.profile-section {
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-surface);
+    padding: 16px;
+}
+
+.result {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.result h2 {
+    font-size: 1.25rem;
+}
+
+.result h3 {
+    font-size: 1.05rem;
+}
+
+.description,
+.empty {
+    margin: 8px 0 0;
+    color: var(--color-subtle-foreground);
+}
+
+.facts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+}
+
+.facts div {
+    display: flex;
+    gap: 10px;
+}
+
+.facts dt {
+    flex: 0 0 120px;
+    color: var(--color-muted-foreground);
+    font-weight: 800;
+}
+
+.facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.backlink {
+    margin-bottom: 18px;
+}
+
+.profile {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.profile-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.profile-grid > div {
+    flex: 1 1 320px;
+}
+
+.profile-grid h2,
+.profile-section h2 {
+    margin-bottom: 12px;
+    font-size: 1rem;
+}
+
+.pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pills li {
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-card);
+    color: var(--color-subtle-foreground);
+    padding: 5px 10px;
+}
+
+@media (max-width: 780px) {
+    main {
+        padding: 32px 0;
+    }
+
+    .search-panel,
+    .profile-grid {
+        flex-direction: column;
+    }
+
+    .facts div {
+        flex-direction: column;
+    }
+
+    button {
+        width: 100%;
+    }
+}

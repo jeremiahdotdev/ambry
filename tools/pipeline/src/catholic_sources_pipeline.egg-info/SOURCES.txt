@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+src/catholic_sources_pipeline/__init__.py
+src/catholic_sources_pipeline/__main__.py
+src/catholic_sources_pipeline/ai_enrichment.py
+src/catholic_sources_pipeline/cli.py
+src/catholic_sources_pipeline/db_ready.py
+src/catholic_sources_pipeline/load_sqlite.py
+src/catholic_sources_pipeline/new_advent.py
+src/catholic_sources_pipeline/text.py
+src/catholic_sources_pipeline.egg-info/PKG-INFO
+src/catholic_sources_pipeline.egg-info/SOURCES.txt
+src/catholic_sources_pipeline.egg-info/dependency_links.txt
+src/catholic_sources_pipeline.egg-info/entry_points.txt
+src/catholic_sources_pipeline.egg-info/requires.txt
+src/catholic_sources_pipeline.egg-info/top_level.txt
+tests/test_pipeline.py

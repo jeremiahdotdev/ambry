@@ -1,0 +1,71 @@
+.saint-backlink {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding-inline: 0.85rem 1rem;
+    border: 1px solid var(--saint-border, rgb(31 76 95 / 24%));
+    border-radius: 999px;
+    background: var(--saint-backdrop, rgb(247 248 238 / 72%));
+    color: var(--saint-accent, #4e7b68);
+    text-decoration: none;
+    box-shadow: 0 0.5rem 1.5rem rgb(32 37 45 / 8%);
+    backdrop-filter: blur(8px);
+}
+
+.saint-backlink span[aria-hidden="true"] {
+    line-height: 1;
+}
+
+.saint-page {
+    position: relative;
+    width: 100vw;
+    min-height: 100svh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background: linear-gradient(90deg, var(--saint-page-start, #d9e5df) 0%, var(--saint-page-mid, #f1f4ec) 48%, var(--saint-page-end, #fbfaf4) 100%);
+}
+
+.saint-hero {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    width: min(100vw, 96rem);
+    min-height: 100svh;
+    margin-inline: auto;
+}
+
+.saint-art {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100vw;
+    height: 58svh;
+    overflow: hidden;
+}
+
+@media (min-width: 781px) {
+    .saint-backlink {
+        position: fixed;
+    }
+
+    .saint-art {
+        left: max(0px, calc((100vw - 96rem) / 2));
+        align-items: flex-end;
+        justify-content: flex-start;
+        width: min(100vw, 96rem);
+        height: 100svh;
+        overflow: visible;
+    }
+
+    .saint-page[data-saint-variant="default"] .saint-art {
+        align-items: flex-end;
+    }
+}

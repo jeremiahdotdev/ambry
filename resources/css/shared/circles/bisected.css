@@ -1,0 +1,11 @@
+.saint-circle {
+    position: fixed;
+    left: var(--circle-x);
+    top: var(--circle-y);
+    z-index: 1;
+    width: var(--circle-size);
+    height: var(--circle-size);
+    opacity: var(--circle-opacity);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+}

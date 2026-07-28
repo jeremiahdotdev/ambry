@@ -1,0 +1,100 @@
+.search-type-selector {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex: 0 1 auto;
+    max-width: fit-content;
+    color: #c95649;
+    white-space: nowrap;
+}
+
+.search-type-selector-button {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.04em;
+    min-height: 0;
+    border: 0;
+    border-radius: 0.08em;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-weight: inherit;
+    line-height: 1.06;
+    padding: 0;
+}
+
+.search-type-selector-text {
+    position: static;
+    display: inline-block;
+    width: auto;
+    height: auto;
+    max-width: min(100%, 9.5em);
+    padding-inline-end: 0.28em;
+    line-height: 1.06;
+    overflow: visible;
+    clip: auto;
+    white-space: nowrap;
+}
+
+.search-type-selector-arrow {
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 0;
+    height: 0;
+    margin-inline-start: 0.04em;
+    border-inline: 0.14em solid transparent;
+    border-block-start: 0.18em solid currentColor;
+    transform: translateY(-0.1em);
+}
+
+.search-type-selector-menu {
+    position: absolute;
+    z-index: 50;
+    top: calc(100% + 0.22em);
+    left: 50%;
+    display: flex;
+    flex-direction: column;
+    min-width: max(100%, 9.5rem);
+    padding: 0.35rem;
+    border: 1px solid rgb(209 154 82 / 32%);
+    border-radius: 0.75rem;
+    background: rgb(255 249 239 / 96%);
+    box-shadow: 0 1rem 2rem rgb(64 27 63 / 14%);
+    transform: translateX(-50%);
+}
+
+.search-type-selector-menu[hidden] {
+    display: none;
+}
+
+.search-type-selector-button:focus-visible {
+    outline: 2px solid rgb(201 133 65 / 35%);
+    outline-offset: 0.08em;
+}
+
+.search-type-selector-option {
+    min-height: 2.2rem;
+    border: 0;
+    border-radius: 0.45rem;
+    background: transparent;
+    color: #401b3f;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1rem;
+    line-height: 1.1;
+    padding: 0 0.8rem;
+    text-align: left;
+}
+
+.search-type-selector-option:hover,
+.search-type-selector-option:focus-visible,
+.search-type-selector-option[aria-selected="true"] {
+    background: #f2e2cf;
+    outline: 0;
+}
+
+@media (max-width: 720px) {
+    .search-type-selector-text {
+        max-width: min(100%, 8.5em);
+    }
+}

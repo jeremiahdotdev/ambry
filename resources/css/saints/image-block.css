@@ -1,0 +1,47 @@
+.saint-image-block {
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 64svh;
+    margin: 0;
+    padding: 2vw;
+    overflow: hidden;
+    transform: translateY(10svh);
+}
+
+.saint-image-block img {
+    display: block;
+    width: 96vw;
+    height: auto;
+    max-height: 64svh;
+    max-width: none;
+    object-fit: contain;
+}
+
+
+@media (min-width: 781px) {
+    .saint-image-block {
+        width: auto;
+        height: 100vh;
+        margin: 0 0 -10svh;
+        padding: 0;
+        overflow: visible;
+    }
+
+    .saint-image-block img {
+        width: auto;
+        height: 100%;
+        max-height: none;
+    }
+
+    .saint-page[data-saint-variant="default"] .saint-image-block {
+        height: 86svh;
+        margin: 0 0 0 clamp(2rem, 6vw, 5rem);
+    }
+
+    .saint-page[data-saint-variant="default"] .saint-image-block img {
+        height: 100%;
+    }
+}

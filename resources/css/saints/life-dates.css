@@ -1,0 +1,24 @@
+.saint-life-dates {
+    display: flex;
+    align-items: center;
+    gap: 0.65em;
+    margin: clamp(10px, 2.2vh, 18px) 0 0;
+    color: var(--saint-text, #143433);
+}
+
+.saint-life-dates small {
+    color: var(--saint-accent, #4e7b68);
+    letter-spacing: 0.14em;
+}
+
+.saint-life-dates-divider {
+    width: 2.25em;
+    height: 1px;
+    background: var(--saint-accent, #4e7b68);
+}
+
+@media (max-width: 780px) {
+    .saint-life-dates {
+        margin-top: 12px;
+    }
+}

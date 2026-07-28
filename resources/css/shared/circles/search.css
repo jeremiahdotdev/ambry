@@ -1,0 +1,103 @@
+.search-circle {
+    --circle-size: 16rem;
+    --circle-color: #c95649;
+    --circle-line: #d9a65e;
+    position: absolute;
+    z-index: 1;
+    width: var(--circle-size);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+        repeating-radial-gradient(circle at 42% 36%, rgb(255 255 255 / 10%) 0 1px, transparent 1px 8px),
+        repeating-linear-gradient(115deg, rgb(255 255 255 / 7%) 0 1px, transparent 1px 9px),
+        var(--circle-color);
+    opacity: 0.9;
+    pointer-events: none;
+}
+
+.search-circle::before,
+.search-circle::after {
+    content: "";
+    position: absolute;
+    inset: 10%;
+    border: 1px solid var(--circle-line);
+    border-radius: 50%;
+}
+
+.search-circle::after {
+    inset: 20%;
+    border-style: dashed;
+    transform: rotate(22deg);
+}
+
+.search-circle-coral {
+    --circle-color: #c95f50;
+    --circle-size: clamp(12rem, 28vw, 20rem);
+    left: -7rem;
+    bottom: -9rem;
+}
+
+.search-circle-ivory {
+    --circle-color: #f6ebdc;
+    --circle-size: clamp(10rem, 24vw, 17rem);
+    left: 4rem;
+    bottom: -11rem;
+    opacity: 0.8;
+}
+
+.search-circle-sage {
+    --circle-color: #557c73;
+    --circle-size: clamp(13rem, 30vw, 22rem);
+    right: -8rem;
+    bottom: -10rem;
+}
+
+.search-circle-gold {
+    --circle-color: #d8a052;
+    --circle-line: #8b5e5a;
+    --circle-size: clamp(9rem, 18vw, 15rem);
+    left: -4.5rem;
+    top: -3rem;
+    opacity: 0.76;
+}
+
+.search-circle-blue {
+    --circle-color: #56738f;
+    --circle-line: #f2d4a3;
+    --circle-size: clamp(10rem, 21vw, 17rem);
+    right: -5.75rem;
+    top: -3.5rem;
+    opacity: 0.72;
+}
+
+@media (max-width: 720px) {
+    .search-circle-coral {
+        --circle-size: 14rem;
+        left: -6.5rem;
+        bottom: -5rem;
+    }
+
+    .search-circle-ivory {
+        --circle-size: 12rem;
+        left: -0.75rem;
+        bottom: -7rem;
+    }
+
+    .search-circle-sage {
+        --circle-size: 15rem;
+        right: -7rem;
+        bottom: -5.5rem;
+    }
+
+    .search-circle-gold {
+        --circle-size: 10rem;
+        left: -5.5rem;
+        top: -3rem;
+    }
+
+    .search-circle-blue {
+        --circle-size: 11rem;
+        right: -6.5rem;
+        top: -3.25rem;
+    }
+}

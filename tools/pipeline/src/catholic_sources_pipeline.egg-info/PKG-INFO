@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: catholic-sources-pipeline
+Version: 0.1.0
+Summary: Convert local Catholic source HTML files into JSON documents.
+Requires-Python: >=3.12
+Requires-Dist: openai>=1.0.0
+Requires-Dist: pillow>=10.0.0

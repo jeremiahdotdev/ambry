@@ -1,0 +1,310 @@
+from __future__ import annotations
+
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from catholic_sources_pipeline.db_ready import build_db_ready_payload, write_db_ready_payload
+from catholic_sources_pipeline.load_sqlite import load_db_ready_json, load_saints_json
+from catholic_sources_pipeline.new_advent import build_new_advent_payload
+
+
+class PipelineSmokeTest(unittest.TestCase):
+    def test_new_advent_reader_converts_html_to_json_documents(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            cathen = workspace / "cathen"
+            cathen.mkdir()
+            (cathen / "01214a.htm").write_text(
+                """
+                <html>
+                  <head><title>CATHOLIC ENCYCLOPEDIA: Source Article</title></head>
+                  <body>
+                    <div id="springfield2">
+                      <h1>Source Article</h1>
+                      <p>Article body.</p>
+                      <div class="pub">
+                        <p id="apa"><span id="apaauthor">Author Name.</span>
+                        <span id="apaarticle">Source Article.</span>
+                        <span id="apaurl">http://www.newadvent.org/cathen/01214a.htm</span></p>
+                      </div>
+                    </div>
+                  </body>
+                </html>
+                """,
+                encoding="utf-8",
+            )
+
+            payload = build_new_advent_payload(workspace)
+
+        self.assertIn("source", payload)
+        self.assertIn("documents", payload)
+        self.assertIn("title", payload["documents"][0])
+        self.assertIn("text", payload["documents"][0])
+        self.assertIn("raw_html", payload["documents"][0])
+        self.assertIn("relative_path", payload["documents"][0])
+
+    def test_db_ready_layer_outputs_source_tables(self) -> None:
+        payload = build_db_ready_payload(
+            {
+                "documents": [
+                    {
+                        "title": "St. Source Article",
+                        "relative_path": "cathen/01214a.htm",
+                        "text": "Article body. Martyr and Doctor of the Church.",
+                        "raw_html": "<html>Article body.</html>",
+                        "metadata": {"citation": {"apaauthor": "Author Name."}},
+                    },
+                    {
+                        "title": "Blessed Sample Person",
+                        "relative_path": "cathen/99999a.htm",
+                        "text": "Article body.",
+                        "raw_html": "<html>Article body.</html>",
+                        "metadata": {"citation": {"apaauthor": "Author Name."}},
+                    }
+                ]
+            }
+        )
+
+        self.assertIn("tables", payload)
+        self.assertIn("sources", payload["tables"])
+        self.assertIn("source_documents", payload["tables"])
+        self.assertIn("citations", payload["tables"])
+        self.assertIn("holy_people", payload["tables"])
+        self.assertNotIn("saints", payload["tables"])
+        self.assertEqual(2, payload["counts"]["source_documents"])
+        self.assertEqual(2, payload["counts"]["holy_people"])
+        self.assertEqual("saint", payload["tables"]["holy_people"][0]["type"])
+        self.assertEqual("blessed", payload["tables"]["holy_people"][1]["type"])
+        self.assertEqual("St. Source Article", payload["tables"]["holy_people"][0]["primary_name"])
+        self.assertTrue(payload["tables"]["holy_people"][0]["is_martyr"])
+        self.assertTrue(payload["tables"]["holy_people"][0]["is_doctor"])
+
+    def test_db_ready_layer_extracts_life_dates_into_holy_people(self) -> None:
+        payload = build_db_ready_payload(
+            {
+                "documents": [
+                    {
+                        "title": "Bl. Agnellus of Pisa",
+                        "relative_path": "cathen/01234a.htm",
+                        "text": "Bl. Agnellus of Pisa Friar Minor, born at Pisa c. 1195; died at Oxford, 7 May, 1236.",
+                        "raw_html": "<html></html>",
+                        "metadata": {"citation": {"apaauthor": "Author Name."}},
+                    },
+                    {
+                        "title": "St. Adalard",
+                        "relative_path": "cathen/01234b.htm",
+                        "text": "St. Adalard Born c. 751; d. 2 January, 827.",
+                        "raw_html": "<html></html>",
+                        "metadata": {"citation": {"apaauthor": "Author Name."}},
+                    },
+                    {
+                        "title": "St. Adelaide",
+                        "relative_path": "cathen/01234c.htm",
+                        "text": "St. Adelaide Abbess, born in the tenth century; died at Cologne, 5 February, 1015.",
+                        "raw_html": "<html></html>",
+                        "metadata": {"citation": {"apaauthor": "Author Name."}},
+                    },
+                ]
+            }
+        )
+
+        agnellus, adalard, adelaide = payload["tables"]["holy_people"]
+
+        self.assertEqual("blessed", agnellus["type"])
+        self.assertEqual(1195, agnellus["birth_year"])
+        self.assertEqual("circa", agnellus["birth_year_qualifier"])
+        self.assertEqual(1236, agnellus["death_year"])
+        self.assertEqual("exact", agnellus["death_year_qualifier"])
+        self.assertEqual("c. 1195 - 1236", agnellus["life_dates"])
+        self.assertEqual(5, agnellus["metadata"]["death"]["month"])
+        self.assertEqual(7, agnellus["metadata"]["death"]["day"])
+        self.assertEqual("circa", agnellus["metadata"]["birth"]["certainty"])
+
+        self.assertEqual(751, adalard["birth_year"])
+        self.assertEqual("exact", adalard["birth_year_qualifier"])
+        self.assertEqual(827, adalard["death_year"])
+        self.assertEqual("exact", adalard["death_year_qualifier"])
+        self.assertEqual(1, adalard["metadata"]["death"]["month"])
+        self.assertEqual(2, adalard["metadata"]["death"]["day"])
+
+        self.assertEqual(950, adelaide["birth_year"])
+        self.assertEqual("century", adelaide["birth_year_qualifier"])
+        self.assertEqual("century", adelaide["metadata"]["birth"]["certainty"])
+        self.assertEqual(1015, adelaide["death_year"])
+        self.assertEqual("10th century - 1015", adelaide["life_dates"])
+
+    def test_db_ready_layer_writes_split_json_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            input_path = workspace / "new-advent.json"
+            output_dir = workspace / "db-ready"
+
+            input_path.write_text(
+                json.dumps(
+                    {
+                        "documents": [
+                            {
+                                "title": "St. Agnes of Rome.",
+                                "relative_path": "cathen/01214a.htm",
+                                "text": "Virgin martyr of Rome.",
+                                "raw_html": "<html>Virgin martyr of Rome.</html>",
+                                "metadata": {"citation": {"apaauthor": "Author Name."}},
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            write_db_ready_payload(input_path, output_dir)
+
+            holy_people = json.loads((output_dir / "holy-people.json").read_text(encoding="utf-8"))
+            manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
+
+        self.assertEqual("holy_people", holy_people["table"])
+        self.assertEqual(1, holy_people["count"])
+        self.assertEqual("saint", holy_people["rows"][0]["type"])
+        self.assertEqual("St. Agnes of Rome", holy_people["rows"][0]["primary_name"])
+        self.assertEqual(1, manifest["tables"]["holy_people"]["count"])
+        self.assertNotIn("saints", manifest["tables"])
+
+    def test_sqlite_loader_loads_source_tables(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            db_path = workspace / "database.sqlite"
+            input_path = workspace / "db-ready.json"
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.executescript(
+                """
+                create table sources (
+                    id text primary key,
+                    name text not null,
+                    slug text not null unique,
+                    type text,
+                    license text,
+                    attribution text,
+                    canonical_url text,
+                    reliability_notes text,
+                    created_at text,
+                    updated_at text
+                );
+                create table source_documents (
+                    id text primary key,
+                    source_id text not null,
+                    title text not null,
+                    slug text,
+                    author text,
+                    edition text,
+                    language text,
+                    url text,
+                    raw_text text,
+                    checksum text,
+                    metadata text,
+                    created_at text,
+                    updated_at text
+                );
+                create table citations (
+                    id text primary key,
+                    source_id text,
+                    title text,
+                    locator text,
+                    url text,
+                    excerpt text,
+                    accessed_at text,
+                    created_at text,
+                    updated_at text
+                );
+                """
+            )
+            connection.close()
+
+            payload = build_db_ready_payload(
+                {
+                    "documents": [
+                        {
+                            "title": "Source Article",
+                            "relative_path": "cathen/01214a.htm",
+                            "text": "Article body.",
+                            "raw_html": "<html>Article body.</html>",
+                            "metadata": {"citation": {"apaauthor": "Author Name."}},
+                        }
+                    ]
+                }
+            )
+            input_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            counts = load_db_ready_json(input_path, db_path)
+
+        self.assertEqual(1, counts["source_documents"])
+
+    def test_sqlite_loader_loads_saints_table(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            db_path = workspace / "database.sqlite"
+            input_path = workspace / "holy-people.json"
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.executescript(
+                """
+                create table saints (
+                    id text primary key,
+                    primary_name text not null,
+                    slug text not null unique,
+                    biography text,
+                    birth_year integer,
+                    birth_year_qualifier text,
+                    death_year integer,
+                    death_year_qualifier text,
+                    life_dates text,
+                    gender text,
+                    canonical_status text not null default 'saint',
+                    is_martyr integer not null default 0,
+                    is_doctor integer not null default 0,
+                    created_at text,
+                    updated_at text
+                );
+                """
+            )
+            connection.close()
+
+            input_path.write_text(
+                json.dumps(
+                    {
+                        "table": "holy_people",
+                        "rows": [
+                            {
+                                "id": "95c7758f-b72c-55c6-a2b4-d0e526174d8a",
+                                "type": "saint",
+                                "primary_name": "St. Agnes of Rome",
+                                "slug": "st-agnes-of-rome",
+                                "biography": "Virgin martyr of Rome.",
+                                "birth_year": None,
+                                "birth_year_qualifier": "unknown",
+                                "death_year": 304,
+                                "death_year_qualifier": "exact",
+                                "life_dates": "304",
+                                "gender": "female",
+                                "canonical_status": "saint",
+                                "is_martyr": True,
+                                "is_doctor": False,
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            counts = load_saints_json(input_path, db_path)
+
+            with __import__("sqlite3").connect(db_path) as connection:
+                row = connection.execute("select primary_name, death_year, is_martyr from saints").fetchone()
+
+        self.assertEqual(1, counts["saints"])
+        self.assertEqual(("St. Agnes of Rome", 304, 1), row)
+
+
+if __name__ == "__main__":
+    unittest.main()

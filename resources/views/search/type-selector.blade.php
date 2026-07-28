@@ -28,11 +28,18 @@
                 type="button"
                 role="option"
                 aria-selected="{{ $selected === $value ? 'true' : 'false' }}"
-                data-search-type-option
-                data-value="{{ $value }}"
-            >
-                {{ $label }}
-            </button>
+            data-search-type-option
+            data-value="{{ $value }}"
+            data-plural="{{ match ($value) {
+                'church_father' => 'church fathers',
+                'blessed' => 'blesseds',
+                'pope' => 'popes',
+                'venerable' => 'venerables',
+                default => 'saints',
+            } }}"
+        >
+            {{ $label }}
+        </button>
         @endforeach
     </span>
 </span>

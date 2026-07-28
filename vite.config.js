@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/css/search/nav.css',
                 'resources/css/shared/circles/search.css',
                 'resources/css/search/type-selector.css',
+                'resources/css/search/results.css',
                 'resources/js/search/index.js',
                 'resources/css/saints/index.css',
                 'resources/css/saints/profile.css',

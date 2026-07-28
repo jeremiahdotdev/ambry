@@ -4,7 +4,10 @@ import argparse
 from pathlib import Path
 
 from .ai_enrichment import AiEnrichmentOptions, run_ai_enrichment
+from .background_removal import BackgroundRemovalOptions, run_background_removal
+from .blob_upload import BlobUploadOptions, run_blob_upload
 from .db_ready import write_db_ready_payload
+from .images import ImageGenerationOptions, StyleContextOptions, prepare_style_context, run_image_generation
 from .load_sqlite import load_db_ready_json, load_saints_json
 from .new_advent import write_new_advent_payload
 
@@ -69,6 +72,163 @@ def main() -> int:
     ai_enrich.add_argument("--batch-size", type=int, default=10)
     ai_enrich.add_argument("--dry-run", action="store_true")
 
+    style_context = subparsers.add_parser(
+        "prepare-image-style-context",
+        help="Upload Ambry style reference images once and save reusable OpenAI file IDs.",
+    )
+    style_context.add_argument(
+        "--output",
+        type=Path,
+        default=Path("storage/app/generated/openai-style-context.json"),
+        help="Manifest path for uploaded OpenAI style reference file IDs.",
+    )
+    style_context.add_argument(
+        "--style-reference",
+        action="append",
+        type=Path,
+        default=None,
+        help="Reference PNG/JPG/WebP for Ambry portrait style. May be passed more than once.",
+    )
+    style_context.add_argument("--force", action="store_true", help="Upload again even if manifest exists.")
+    style_context.add_argument("--dry-run", action="store_true")
+
+    generate_images = subparsers.add_parser(
+        "generate-images",
+        help="Generate local saint portrait PNGs from stored image_prompt values.",
+    )
+    generate_images.add_argument("database", type=Path, help="SQLite database path.")
+    generate_images.add_argument(
+        "output",
+        type=Path,
+        help="Local output directory for generated PNG and metadata files.",
+    )
+    generate_images.add_argument("--model", default="gpt-image-2")
+    generate_images.add_argument("--size", default="800x1008")
+    generate_images.add_argument("--portrait-size", default="608x1200")
+    generate_images.add_argument("--quality", default="high")
+    generate_images.add_argument("--background", default="auto")
+    generate_images.add_argument("--portrait-webp-quality", type=int, default=86)
+    generate_images.add_argument("--thumb-height", type=int, default=474)
+    generate_images.add_argument(
+        "--thumb-width",
+        type=int,
+        default=None,
+        help="Legacy width-based thumbnail resize. Prefer --thumb-height.",
+    )
+    generate_images.add_argument("--thumb-webp-quality", type=int, default=80)
+    generate_images.add_argument(
+        "--design-analysis",
+        choices=["model", "none"],
+        default="model",
+        help="Run the post-generation model call for key colors and page variant recommendation.",
+    )
+    generate_images.add_argument("--limit", type=int, default=1)
+    generate_images.add_argument("--offset", type=int, default=0)
+    generate_images.add_argument("--slug", default=None, help="Generate a specific saint by slug.")
+    generate_images.add_argument(
+        "--style-reference",
+        action="append",
+        type=Path,
+        default=None,
+        help="Reference PNG/JPG/WebP for Ambry portrait style. May be passed more than once.",
+    )
+    generate_images.add_argument(
+        "--no-style-references",
+        action="store_true",
+        help="Generate without the small default Ambry style reference image.",
+    )
+    generate_images.add_argument(
+        "--style-context",
+        type=Path,
+        default=None,
+        help="Manifest of uploaded OpenAI style reference file IDs from prepare-image-style-context.",
+    )
+    generate_images.add_argument(
+        "--response-model",
+        default="gpt-5.6",
+        help="Mainline Responses API model used when --style-context is supplied.",
+    )
+    generate_images.add_argument(
+        "--all",
+        action="store_true",
+        help="Generate every selected saint. Without this, --limit defaults to 1.",
+    )
+    generate_images.add_argument("--force", action="store_true", help="Regenerate existing image files.")
+    generate_images.add_argument("--dry-run", action="store_true")
+
+    remove_backgrounds = subparsers.add_parser(
+        "remove-image-backgrounds",
+        help="Create transparent PNG/WebP saint portraits in a separate output directory.",
+    )
+    remove_backgrounds.add_argument(
+        "input",
+        type=Path,
+        help="Generated saint image directory, e.g. storage/app/generated/saints.",
+    )
+    remove_backgrounds.add_argument(
+        "output",
+        type=Path,
+        help="Separate output directory for transparent cutouts.",
+    )
+    remove_backgrounds.add_argument(
+        "--provider",
+        choices=["light-bg", "rembg"],
+        default="light-bg",
+        help="Use the built-in light-background remover or optional rembg ML provider.",
+    )
+    remove_backgrounds.add_argument("--source-filename", default="original.png")
+    remove_backgrounds.add_argument("--output-filename", default="cutout.png")
+    remove_backgrounds.add_argument("--portrait-size", default="608x1200")
+    remove_backgrounds.add_argument("--portrait-webp-quality", type=int, default=86)
+    remove_backgrounds.add_argument("--thumb-height", type=int, default=474)
+    remove_backgrounds.add_argument(
+        "--thumb-width",
+        type=int,
+        default=None,
+        help="Legacy width-based thumbnail resize. Prefer --thumb-height.",
+    )
+    remove_backgrounds.add_argument("--thumb-webp-quality", type=int, default=80)
+    remove_backgrounds.add_argument("--tolerance", type=int, default=10)
+    remove_backgrounds.add_argument("--transition", type=int, default=52)
+    remove_backgrounds.add_argument("--feather-radius", type=float, default=0.4)
+    remove_backgrounds.add_argument(
+        "--no-horizontal-trim",
+        action="store_true",
+        help="Keep the full source width after removing the background.",
+    )
+    remove_backgrounds.add_argument("--trim-padding-ratio", type=float, default=0.015)
+    remove_backgrounds.add_argument("--trim-min-width-ratio", type=float, default=0.0)
+    remove_backgrounds.add_argument("--trim-alpha-threshold", type=int, default=8)
+    remove_backgrounds.add_argument("--rembg-model", default="isnet-general-use")
+    remove_backgrounds.add_argument("--slug", default=None)
+    remove_backgrounds.add_argument("--limit", type=int, default=1)
+    remove_backgrounds.add_argument("--offset", type=int, default=0)
+    remove_backgrounds.add_argument("--all", action="store_true")
+    remove_backgrounds.add_argument("--force", action="store_true")
+    remove_backgrounds.add_argument("--dry-run", action="store_true")
+
+    upload_blobs = subparsers.add_parser(
+        "upload-saint-blobs",
+        help="Upload transparent saint image assets to Vercel Blob and store public URLs on saints.",
+    )
+    upload_blobs.add_argument("database", type=Path, help="SQLite database path.")
+    upload_blobs.add_argument(
+        "input",
+        type=Path,
+        help="Transparent saint image directory, e.g. storage/app/generated/background-removed/saints.",
+    )
+    upload_blobs.add_argument("--prefix", default="saints/v1")
+    upload_blobs.add_argument("--slug", default=None)
+    upload_blobs.add_argument("--limit", type=int, default=1)
+    upload_blobs.add_argument("--offset", type=int, default=0)
+    upload_blobs.add_argument("--all", action="store_true")
+    upload_blobs.add_argument(
+        "--node-script",
+        type=Path,
+        default=Path("tools/pipeline/bin/upload-vercel-blob.mjs"),
+    )
+    upload_blobs.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args()
 
     if args.command == "new-advent-html":
@@ -121,6 +281,126 @@ def main() -> int:
             f"{counts['selected']} rows, "
             f"reviewed {counts['reviewed']} "
             f"in {counts['requests']} requests"
+        )
+
+        return 0
+
+    if args.command == "prepare-image-style-context":
+        style_references = tuple(args.style_reference) if args.style_reference else (
+            Path("storage/app/generated/style-references/assisi-final-small.png"),
+        )
+        counts = prepare_style_context(
+            StyleContextOptions(
+                output_path=args.output,
+                style_references=style_references,
+                force=args.force,
+                dry_run=args.dry_run,
+            )
+        )
+        print(
+            "Image style context has "
+            f"{counts['references']} references, "
+            f"uploaded {counts['uploaded']}"
+        )
+
+        return 0
+
+    if args.command == "generate-images":
+        style_references = ()
+        if not args.no_style_references:
+            style_references = tuple(args.style_reference) if args.style_reference else (
+                Path("storage/app/generated/style-references/assisi-final-small.png"),
+            )
+
+        counts = run_image_generation(
+            ImageGenerationOptions(
+                database_path=args.database,
+                output_dir=args.output,
+                model=args.model,
+                response_model=args.response_model,
+                size=args.size,
+                portrait_size=args.portrait_size,
+                quality=args.quality,
+                background=args.background,
+                portrait_webp_quality=args.portrait_webp_quality,
+                thumb_height=args.thumb_height,
+                thumb_width=args.thumb_width,
+                thumb_webp_quality=args.thumb_webp_quality,
+                design_analysis=args.design_analysis,
+                limit=None if args.all else args.limit,
+                offset=args.offset,
+                slug=args.slug,
+                force=args.force,
+                dry_run=args.dry_run,
+                style_references=style_references,
+                style_context_path=args.style_context,
+            )
+        )
+        print(
+            "Image generation selected "
+            f"{counts['selected']} rows, "
+            f"skipped {counts['skipped']}, "
+            f"generated {counts['generated']}"
+        )
+
+        return 0
+
+    if args.command == "remove-image-backgrounds":
+        counts = run_background_removal(
+            BackgroundRemovalOptions(
+                input_dir=args.input,
+                output_dir=args.output,
+                provider=args.provider,
+                source_filename=args.source_filename,
+                output_filename=args.output_filename,
+                portrait_size=args.portrait_size,
+                portrait_webp_quality=args.portrait_webp_quality,
+                thumb_height=args.thumb_height,
+                thumb_width=args.thumb_width,
+                thumb_webp_quality=args.thumb_webp_quality,
+                tolerance=args.tolerance,
+                transition=args.transition,
+                feather_radius=args.feather_radius,
+                trim_horizontal=not args.no_horizontal_trim,
+                trim_padding_ratio=args.trim_padding_ratio,
+                trim_min_width_ratio=args.trim_min_width_ratio,
+                trim_alpha_threshold=args.trim_alpha_threshold,
+                rembg_model=args.rembg_model,
+                slug=args.slug,
+                limit=None if args.all else args.limit,
+                offset=args.offset,
+                force=args.force,
+                dry_run=args.dry_run,
+            )
+        )
+        print(
+            "Background removal selected "
+            f"{counts['selected']} rows, "
+            f"skipped {counts['skipped']}, "
+            f"processed {counts['processed']}"
+        )
+
+        return 0
+
+    if args.command == "upload-saint-blobs":
+        counts = run_blob_upload(
+            BlobUploadOptions(
+                database_path=args.database,
+                input_dir=args.input,
+                prefix=args.prefix,
+                slug=args.slug,
+                limit=None if args.all else args.limit,
+                offset=args.offset,
+                node_script=args.node_script,
+                dry_run=args.dry_run,
+            )
+        )
+        print(
+            "Blob upload selected "
+            f"{counts['selected']} rows, "
+            f"uploaded {counts['uploaded_files']} files, "
+            f"updated {counts['updated_rows']} rows, "
+            f"missing {counts['missing_assets']} assets"
         )
 
         return 0

@@ -42,9 +42,9 @@ class SaintController extends Controller
     {
         return [
             'id' => $saint->id,
-            'name' => $saint->primary_name,
+            'name' => $saint->canonical_status === 'pope' ? $saint->displayName() : $saint->primary_name,
             'slug' => $saint->slug,
-            'biography' => $saint->biography,
+            'biography' => $saint->displayBiography(),
             'birth_year' => $saint->birth_year,
             'birth_year_qualifier' => $saint->birth_year_qualifier,
             'death_year' => $saint->death_year,
@@ -54,6 +54,9 @@ class SaintController extends Controller
             'canonical_status' => $saint->canonical_status,
             'is_martyr' => $saint->is_martyr,
             'is_doctor' => $saint->is_doctor,
+            'image_cutout_url' => $saint->image_cutout_url,
+            'image_portrait_url' => $saint->image_portrait_url,
+            'image_thumb_url' => $saint->image_thumb_url,
             'aliases' => $saint->aliases->pluck('alias')->values(),
             'feast_days' => $saint->feastDays->map(fn ($feastDay): array => [
                 'month' => $feastDay->month,

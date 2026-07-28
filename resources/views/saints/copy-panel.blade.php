@@ -1,6 +1,7 @@
 <div class="saint-copy-panel">
     @include('saints.title-block', [
-        'name' => $saint->primary_name,
+        'name' => $saint->displayName(),
+        'kicker' => $saint->displayCanonicalStatus(),
         'subtitle' => $subtitle ?? null,
         'lifeDates' => $saint->displayLifeDates(),
     ])
@@ -20,12 +21,10 @@
 
     <span class="saint-divider"></span>
 
-    @if ($saint->biography)
+    @if ($saint->displayBiography())
         <div class="saint-intro">
-            @foreach (preg_split('/\R{2,}/', \Illuminate\Support\Str::of($saint->biography)->stripTags()->toString()) as $paragraph)
-                @if (trim($paragraph) !== '')
-                    <p>{{ trim($paragraph) }}</p>
-                @endif
+            @foreach ($saint->displayBiographyParagraphs() as $paragraph)
+                <p>{{ $paragraph }}</p>
             @endforeach
         </div>
     @endif

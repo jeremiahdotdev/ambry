@@ -5,12 +5,370 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from catholic_sources_pipeline.background_removal import BackgroundRemovalOptions, run_background_removal
+from catholic_sources_pipeline.blob_upload import BlobUploadOptions, run_blob_upload
 from catholic_sources_pipeline.db_ready import build_db_ready_payload, write_db_ready_payload
+from catholic_sources_pipeline.images import (
+    ImageGenerationOptions,
+    StyleContextOptions,
+    build_portrait_prompt,
+    PAGE_VARIANTS,
+    prepare_style_context,
+    run_image_generation,
+)
 from catholic_sources_pipeline.load_sqlite import load_db_ready_json, load_saints_json
 from catholic_sources_pipeline.new_advent import build_new_advent_payload
 
 
 class PipelineSmokeTest(unittest.TestCase):
+    def test_blob_upload_dry_run_adds_urls_for_complete_transparent_assets(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            db_path = workspace / "database.sqlite"
+            saint_dir = workspace / "cutouts" / "st-sample"
+            saint_dir.mkdir(parents=True)
+            (saint_dir / "cutout.png").write_bytes(b"png")
+            (saint_dir / "portrait.webp").write_bytes(b"webp")
+            (saint_dir / "thumb.webp").write_bytes(b"webp")
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.executescript(
+                """
+                create table saints (
+                    id text primary key,
+                    slug text not null
+                );
+                insert into saints (id, slug) values ('1', 'st-sample');
+                """
+            )
+            connection.close()
+
+            counts = run_blob_upload(
+                BlobUploadOptions(
+                    database_path=db_path,
+                    input_dir=workspace / "cutouts",
+                    dry_run=True,
+                    limit=10,
+                )
+            )
+
+        self.assertEqual(1, counts["selected"])
+        self.assertEqual(3, counts["uploaded_files"])
+        self.assertEqual(1, counts["updated_rows"])
+        self.assertEqual(0, counts["missing_assets"])
+
+    def test_background_removal_creates_transparent_cutout_derivatives_and_metadata(self) -> None:
+        from PIL import Image, ImageDraw
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            input_dir = workspace / "saints"
+            source_dir = input_dir / "st-sample"
+            output_dir = workspace / "cutouts"
+            source_dir.mkdir(parents=True)
+
+            image = Image.new("RGB", (80, 120), (248, 248, 244))
+            draw = ImageDraw.Draw(image)
+            draw.rectangle((24, 24, 56, 100), fill=(150, 40, 40))
+            image.save(source_dir / "original.png")
+            (source_dir / "metadata.json").write_text(
+                json.dumps({"model": "test-model", "size": "80x120", "generated_at": "now"}),
+                encoding="utf-8",
+            )
+
+            counts = run_background_removal(
+                BackgroundRemovalOptions(
+                    input_dir=input_dir,
+                    output_dir=output_dir,
+                    portrait_size="80x120",
+                    thumb_height=30,
+                    tolerance=8,
+                    transition=30,
+                    feather_radius=0,
+                )
+            )
+
+            cutout_path = output_dir / "st-sample" / "cutout.png"
+            metadata = json.loads((output_dir / "st-sample" / "metadata.json").read_text(encoding="utf-8"))
+
+            with Image.open(cutout_path) as cutout:
+                self.assertEqual((35, 120), cutout.size)
+                self.assertEqual(0, cutout.getpixel((0, 0))[3])
+                self.assertEqual(255, cutout.getpixel((17, 60))[3])
+
+            with Image.open(output_dir / "st-sample" / "portrait.webp") as portrait:
+                self.assertEqual((35, 120), portrait.size)
+
+            with Image.open(output_dir / "st-sample" / "thumb.webp") as thumb:
+                self.assertEqual((9, 30), thumb.size)
+
+            self.assertEqual(1, counts["selected"])
+            self.assertEqual(1, counts["processed"])
+            self.assertTrue((output_dir / "st-sample" / "portrait.webp").exists())
+            self.assertTrue((output_dir / "st-sample" / "thumb.webp").exists())
+            self.assertEqual("light-bg", metadata["provider"])
+            self.assertTrue(metadata["trim"]["horizontal"])
+
+    def test_background_removal_preserves_internal_background_colored_details(self) -> None:
+        from PIL import Image, ImageDraw
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            source_dir = workspace / "saints" / "st-sample"
+            output_dir = workspace / "cutouts"
+            source_dir.mkdir(parents=True)
+
+            image = Image.new("RGB", (90, 120), (248, 248, 244))
+            draw = ImageDraw.Draw(image)
+            draw.rectangle((18, 20, 72, 110), fill=(130, 60, 50))
+            draw.rectangle((38, 40, 52, 58), fill=(248, 248, 244))
+            image.save(source_dir / "original.png")
+
+            run_background_removal(
+                BackgroundRemovalOptions(
+                    input_dir=workspace / "saints",
+                    output_dir=output_dir,
+                    portrait_size="90x120",
+                    thumb_height=30,
+                    tolerance=10,
+                    transition=52,
+                    feather_radius=0,
+                )
+            )
+
+            with Image.open(output_dir / "st-sample" / "cutout.png") as cutout:
+                self.assertEqual(0, cutout.getpixel((0, 0))[3])
+                self.assertEqual(255, cutout.getpixel((27, 49))[3])
+
+    def test_background_removal_can_keep_full_width(self) -> None:
+        from PIL import Image, ImageDraw
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            source_dir = workspace / "saints" / "st-sample"
+            output_dir = workspace / "cutouts"
+            source_dir.mkdir(parents=True)
+
+            image = Image.new("RGB", (80, 120), (248, 248, 244))
+            draw = ImageDraw.Draw(image)
+            draw.rectangle((24, 24, 56, 100), fill=(150, 40, 40))
+            image.save(source_dir / "original.png")
+
+            run_background_removal(
+                BackgroundRemovalOptions(
+                    input_dir=workspace / "saints",
+                    output_dir=output_dir,
+                    portrait_size="80x120",
+                    thumb_height=30,
+                    tolerance=8,
+                    transition=30,
+                    feather_radius=0,
+                    trim_horizontal=False,
+                )
+            )
+
+            with Image.open(output_dir / "st-sample" / "cutout.png") as cutout:
+                self.assertEqual((80, 120), cutout.size)
+
+    def test_background_removal_dry_run_skips_existing_cutouts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            source_dir = workspace / "saints" / "st-sample"
+            cutout_dir = workspace / "cutouts" / "st-sample"
+            source_dir.mkdir(parents=True)
+            cutout_dir.mkdir(parents=True)
+            (source_dir / "original.png").write_bytes(b"png")
+            (cutout_dir / "cutout.png").write_bytes(b"png")
+
+            counts = run_background_removal(
+                BackgroundRemovalOptions(
+                    input_dir=workspace / "saints",
+                    output_dir=workspace / "cutouts",
+                    dry_run=True,
+                )
+            )
+
+        self.assertEqual(1, counts["selected"])
+        self.assertEqual(1, counts["skipped"])
+        self.assertEqual(0, counts["processed"])
+
+    def test_style_context_dry_run_selects_reference_images(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            reference = workspace / "default.png"
+            reference.write_bytes(b"png")
+
+            counts = prepare_style_context(
+                StyleContextOptions(
+                    output_path=workspace / "style-context.json",
+                    style_references=(reference,),
+                    dry_run=True,
+                )
+            )
+
+        self.assertEqual(1, counts["references"])
+        self.assertEqual(0, counts["uploaded"])
+
+    def test_image_generation_dry_run_selects_prompted_saints(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            db_path = workspace / "database.sqlite"
+            output_dir = workspace / "images"
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.executescript(
+                """
+                create table saints (
+                    id text primary key,
+                    primary_name text not null,
+                    slug text not null,
+                    life_dates text,
+                    gender text,
+                    canonical_status text,
+                    image_prompt text
+                );
+                insert into saints (
+                    id, primary_name, slug, life_dates, gender, canonical_status, image_prompt
+                ) values
+                    ('1', 'St. Agnes of Rome', 'st-agnes-of-rome', 'c. 291-304 AD', 'female', 'saint', 'Young Roman martyr holding a palm branch.'),
+                    ('2', 'St. No Prompt', 'st-no-prompt', null, null, 'saint', null);
+                """
+            )
+            connection.close()
+
+            counts = run_image_generation(
+                ImageGenerationOptions(
+                    database_path=db_path,
+                    output_dir=output_dir,
+                    dry_run=True,
+                    limit=10,
+                )
+            )
+
+        self.assertEqual(1, counts["selected"])
+        self.assertEqual(0, counts["skipped"])
+        self.assertEqual(0, counts["generated"])
+
+    def test_image_generation_dry_run_skips_existing_pngs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            db_path = workspace / "database.sqlite"
+            output_dir = workspace / "images"
+            saint_dir = output_dir / "st-agnes-of-rome"
+            saint_dir.mkdir(parents=True)
+            (saint_dir / "original.png").write_bytes(b"png")
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.executescript(
+                """
+                create table saints (
+                    id text primary key,
+                    primary_name text not null,
+                    slug text not null,
+                    life_dates text,
+                    gender text,
+                    canonical_status text,
+                    image_prompt text
+                );
+                insert into saints (
+                    id, primary_name, slug, life_dates, gender, canonical_status, image_prompt
+                ) values
+                    ('1', 'St. Agnes of Rome', 'st-agnes-of-rome', null, 'female', 'saint', 'Young Roman martyr.');
+                """
+            )
+            connection.close()
+
+            counts = run_image_generation(
+                ImageGenerationOptions(
+                    database_path=db_path,
+                    output_dir=output_dir,
+                    dry_run=True,
+                    limit=10,
+                )
+            )
+
+        self.assertEqual(1, counts["selected"])
+        self.assertEqual(1, counts["skipped"])
+        self.assertEqual(0, counts["generated"])
+
+    def test_image_generation_dry_run_selects_slug(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            db_path = workspace / "database.sqlite"
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.executescript(
+                """
+                create table saints (
+                    id text primary key,
+                    primary_name text not null,
+                    slug text not null,
+                    life_dates text,
+                    gender text,
+                    canonical_status text,
+                    image_prompt text
+                );
+                insert into saints (
+                    id, primary_name, slug, life_dates, gender, canonical_status, image_prompt
+                ) values
+                    ('1', 'St. Agnes of Rome', 'st-agnes-of-rome', null, 'female', 'saint', 'Young Roman martyr.'),
+                    ('2', 'St. Francis of Assisi', 'st-francis-of-assisi', null, 'male', 'saint', 'Franciscan friar.');
+                """
+            )
+            connection.close()
+
+            counts = run_image_generation(
+                ImageGenerationOptions(
+                    database_path=db_path,
+                    output_dir=workspace / "images",
+                    dry_run=True,
+                    slug="st-francis-of-assisi",
+                )
+            )
+
+        self.assertEqual(1, counts["selected"])
+        self.assertEqual(0, counts["generated"])
+
+    def test_image_prompt_adds_collection_style_constraints(self) -> None:
+        prompt = build_portrait_prompt(
+            {
+                "primary_name": "St. Agnes of Rome",
+                "canonical_status": "saint",
+                "life_dates": "c. 291-304 AD",
+                "gender": "female",
+                "image_prompt": "Young Roman martyr holding a palm branch.",
+            },
+            "832x1216",
+        )
+
+        self.assertIn("St. Agnes of Rome", prompt)
+        self.assertIn("exactly 832 pixels wide by 1216 pixels tall", prompt)
+        self.assertIn("Do not return a square image", prompt)
+        self.assertIn("Do not include text", prompt)
+        self.assertIn("attached Ambry reference images", prompt)
+        self.assertIn("Do not copy the face", prompt)
+        self.assertIn("clean geometric robe folds", prompt)
+        self.assertIn("known historical or traditional iconographic traits", prompt)
+        self.assertIn("Avoid generic repeated faces", prompt)
+        self.assertIn("full-body standing portrait", prompt)
+        self.assertIn("feet visible", prompt)
+        self.assertIn("normal human proportions", prompt)
+        self.assertIn("Do not elongate", prompt)
+        self.assertIn("plain very light removable background", prompt)
+        self.assertIn("Do not place animals", prompt)
+        self.assertIn("bottom half", prompt)
+        self.assertIn("map to one Ambry page variant", prompt)
+
+    def test_page_variant_catalog_has_persistable_variants(self) -> None:
+        self.assertEqual(17, len(PAGE_VARIANTS))
+        self.assertIn("classic-gold", PAGE_VARIANTS)
+        self.assertIn("martyr-crimson", PAGE_VARIANTS)
+        self.assertIn("dominican-charcoal", PAGE_VARIANTS)
+        self.assertIn("royal-red-gold", PAGE_VARIANTS)
+        self.assertIn("byzantine-jewel", PAGE_VARIANTS)
+        self.assertIn("floral-rose", PAGE_VARIANTS)
+        self.assertIn("sea-aqua", PAGE_VARIANTS)
+
     def test_new_advent_reader_converts_html_to_json_documents(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir)

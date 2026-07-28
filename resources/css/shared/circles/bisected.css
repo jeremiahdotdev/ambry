@@ -1,11 +1,67 @@
 .saint-circle {
+    --circle-size: 20rem;
+    --circle-color: #b7831b;
+    --circle-route: #f3ead7;
+    --circle-line: #d9a65e;
     position: fixed;
     left: var(--circle-x);
     top: var(--circle-y);
     z-index: 1;
     width: var(--circle-size);
-    height: var(--circle-size);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle, transparent 0 61%, color-mix(in srgb, var(--circle-line) 78%, transparent) 61.2% 61.6%, transparent 61.8%),
+        radial-gradient(circle, transparent 0 78%, color-mix(in srgb, var(--circle-line) 74%, transparent) 78.2% 78.6%, transparent 78.8%),
+        repeating-radial-gradient(circle at 42% 36%, rgb(255 255 255 / 8%) 0 1px, transparent 1px 8px),
+        repeating-linear-gradient(115deg, color-mix(in srgb, var(--circle-line) 14%, transparent) 0 1px, transparent 1px 9px),
+        radial-gradient(circle at 35% 28%, rgb(255 255 255 / 18%), transparent 32%),
+        linear-gradient(145deg, color-mix(in srgb, var(--circle-color) 88%, white), var(--circle-color));
+    box-shadow:
+        calc(var(--circle-size) * 0.2) calc(var(--circle-size) * -0.05) 0 calc(var(--circle-size) * -0.34) color-mix(in srgb, var(--circle-route) 82%, white),
+        calc(var(--circle-size) * -0.18) calc(var(--circle-size) * 0.23) 0 calc(var(--circle-size) * -0.38) color-mix(in srgb, var(--circle-color) 76%, var(--circle-route)),
+        calc(var(--circle-size) * 0.38) calc(var(--circle-size) * 0.32) 0 calc(var(--circle-size) * -0.43) color-mix(in srgb, var(--circle-route) 65%, transparent),
+        inset 0 0 0 1px rgb(255 255 255 / 18%);
     opacity: var(--circle-opacity);
     mix-blend-mode: multiply;
     pointer-events: none;
+    transform: rotate(var(--circle-rotation));
+}
+
+.saint-circle::before,
+.saint-circle::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.saint-circle::before {
+    width: 30%;
+    aspect-ratio: 1;
+    left: 66%;
+    top: 7%;
+    background:
+        radial-gradient(circle at 36% 30%, rgb(255 255 255 / 18%), transparent 38%),
+        color-mix(in srgb, var(--circle-route) 78%, white);
+    box-shadow:
+        calc(var(--circle-size) * -0.92) calc(var(--circle-size) * 0.16) 0 calc(var(--circle-size) * -0.08) color-mix(in srgb, var(--circle-route) 55%, white),
+        calc(var(--circle-size) * -0.28) calc(var(--circle-size) * 0.62) 0 calc(var(--circle-size) * -0.1) color-mix(in srgb, var(--circle-color) 64%, white);
+}
+
+.saint-circle::after {
+    width: 18%;
+    aspect-ratio: 1;
+    left: 12%;
+    top: 20%;
+    background:
+        radial-gradient(circle at 36% 30%, rgb(255 255 255 / 20%), transparent 42%),
+        color-mix(in srgb, var(--circle-color) 72%, var(--circle-route));
+    box-shadow:
+        calc(var(--circle-size) * 0.92) calc(var(--circle-size) * 0.36) 0 calc(var(--circle-size) * 0.08) color-mix(in srgb, var(--circle-route) 58%, transparent),
+        calc(var(--circle-size) * 0.5) calc(var(--circle-size) * -0.34) 0 calc(var(--circle-size) * -0.03) color-mix(in srgb, var(--circle-color) 55%, white);
+}
+
+.saint-circle span {
+    display: none;
 }

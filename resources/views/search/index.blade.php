@@ -11,6 +11,7 @@
         'resources/css/search/nav.css',
         'resources/css/shared/circles/search.css',
         'resources/css/search/type-selector.css',
+        'resources/css/search/results.css',
         'resources/js/search/index.js',
     ])
 </head>
@@ -24,6 +25,9 @@
             'venerable' => 'Venerables',
             default => 'Saints',
         };
+        $popularSearches ??= [];
+        $selectedPopularSearch ??= null;
+        $selectedPopularLabel = $selectedPopularSearch ? ($popularSearches[$selectedPopularSearch]['label'] ?? null) : null;
     @endphp
 
     <main class="search-page">
@@ -35,7 +39,9 @@
                 <span class="search-star search-star-b">✦</span>
                 <span class="search-star search-star-c">✦</span>
                 <span class="search-star search-star-d">✦</span>
-                <div class="search-crest">✣</div>
+                <div class="search-crest">
+                    <span>✣</span>
+                </div>
             </div>
 
             <header class="search-header">
@@ -68,7 +74,28 @@
                     <button type="submit" aria-label="Search">
                         <i data-lucide="arrow-right" aria-hidden="true"></i>
                     </button>
+                    @if ($selectedPopularSearch)
+                        <input type="hidden" name="popular" value="{{ $selectedPopularSearch }}">
+                    @endif
                 </form>
+
+                @if ($popularSearches)
+                    <nav class="popular-searches" aria-label="Popular filters">
+                        <p>Popular Filters</p>
+                        <div class="popular-search-list">
+                            @foreach ($popularSearches as $popularKey => $popularSearch)
+                                <a
+                                    class="popular-search-link {{ $selectedPopularSearch === $popularKey ? 'is-active' : '' }}"
+                                    href="{{ route('search.results', ['q' => $query, 'type' => $selectedType, 'popular' => $popularKey]) }}"
+                                    aria-current="{{ $selectedPopularSearch === $popularKey ? 'true' : 'false' }}"
+                                >
+                                    <i data-lucide="{{ $popularSearch['icon'] }}" aria-hidden="true"></i>
+                                    <span>{{ $popularSearch['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </nav>
+                @endif
 
                 @if ($error)
                     <p class="search-message">{{ $error }}</p>
@@ -76,56 +103,21 @@
 
                 @if ($searched && ! $error)
                     <div class="search-summary">
-                        <span>{{ $results->count() }} {{ \Illuminate\Support\Str::plural('result', $results->count()) }}</span>
-                        <span>for “{{ $query }}”</span>
+                        @php($resultCount = method_exists($results, 'total') ? $results->total() : $results->count())
+                        <span>{{ $resultCount }} {{ \Illuminate\Support\Str::plural('result', $resultCount) }}</span>
+                        @if ($query !== '')
+                            <span>for "{{ $query }}"</span>
+                        @elseif ($selectedPopularLabel)
+                            <span>for {{ $selectedPopularLabel }}</span>
+                        @endif
                     </div>
 
-                    <section class="search-results" aria-label="Saint search results">
-                        @forelse ($results as $saint)
-                            @php
-                                $relativePath = "saints/{$saint->slug}.png";
-                                $hasImage = file_exists(public_path($relativePath));
-                                $fallbackPath = $saint->gender === 'female' ? 'saints/default_female.png' : 'saints/default.png';
-                                $imagePath = $hasImage ? $relativePath : $fallbackPath;
-                                $displayName = preg_replace('/^(?:Pope\s+)?(?:St\.|Saint)\s+/i', '', $saint->primary_name);
-                                $lifeDates = $saint->displayLifeDates();
-                            @endphp
-
-                            <article class="search-result">
-                                <a class="search-result-link" href="{{ route('saints.profile', $saint) }}">
-                                    <span class="search-result-image">
-                                        <img src="{{ asset($imagePath) }}" alt="">
-                                    </span>
-                                    <span class="search-result-content">
-                                        <span class="search-result-title">
-                                            <span>{{ $searchTypes[$saint->canonical_status] ?? ucfirst(str_replace('_', ' ', $saint->canonical_status)) }}</span>
-                                            {{ $displayName }}
-                                        </span>
-                                        <span class="search-result-meta">
-                                            @if ($lifeDates)
-                                                <span>{{ $lifeDates }}</span>
-                                            @endif
-                                        </span>
-                                        @if ($saint->biography)
-                                        <span class="search-result-excerpt">
-                                            {{ \Illuminate\Support\Str::limit(\Illuminate\Support\Str::of($saint->biography)->stripTags()->squish(), 180) }}
-                                        </span>
-                                        @endif
-                                        @if ($saint->patronages->isNotEmpty())
-                                            <span class="search-result-patronages" aria-label="Patronages">
-                                                @foreach ($saint->patronages->take(3) as $patronage)
-                                                    <span>{{ $patronage->name }}</span>
-                                                @endforeach
-                                            </span>
-                                        @endif
-                                    </span>
-                                    <span class="search-result-arrow" aria-hidden="true">→</span>
-                                </a>
-                            </article>
-                        @empty
-                            <p class="search-empty">No {{ strtolower($selectedTypePlural) }} matched that search.</p>
-                        @endforelse
-                    </section>
+                    @include('search.results', [
+                        'results' => $results,
+                        'searchTypes' => $searchTypes,
+                        'selectedTypePlural' => $selectedTypePlural,
+                        'selectedPopularLabel' => $selectedPopularLabel,
+                    ])
                 @endif
             </section>
         </div>

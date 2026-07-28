@@ -4,7 +4,7 @@
     align-items: center;
     justify-content: center;
     width: 100vw;
-    height: 64svh;
+    height: 100svh;
     margin: 0;
     padding: 2vw;
     overflow: hidden;
@@ -15,7 +15,7 @@
     display: block;
     width: 96vw;
     height: auto;
-    max-height: 64svh;
+    max-height: 100svh;
     max-width: none;
     object-fit: contain;
 }
@@ -24,10 +24,11 @@
 @media (min-width: 781px) {
     .saint-image-block {
         width: auto;
-        height: 100vh;
+        height: 140vh;
         margin: 0 0 -10svh;
         padding: 0;
         overflow: visible;
+        transform: translateY(40svh);
     }
 
     .saint-image-block img {

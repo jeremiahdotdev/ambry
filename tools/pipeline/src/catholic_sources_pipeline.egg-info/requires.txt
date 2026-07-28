@@ -1,2 +1,6 @@
 openai>=1.0.0
-pillow>=10.0.0
+Pillow>=10.0.0
+
+[background-removal]
+onnxruntime>=1.18.0
+rembg>=2.0.0

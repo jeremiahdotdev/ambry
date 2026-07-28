@@ -3,42 +3,56 @@
 namespace App\Services;
 
 use App\Models\Saint;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class SaintSearchService
 {
     /**
-     * @return Collection<int, Saint>
+     * @return Collection<int, Saint>|LengthAwarePaginator<int, Saint>|Paginator<int, Saint>
      */
     public function search(
         ?string $query,
         ?string $patronage = null,
         ?string $order = null,
         ?string $type = null,
-    ): Collection
+        ?string $popular = null,
+        ?int $perPage = null,
+        ?array $with = null,
+    ): Collection|LengthAwarePaginator|Paginator
     {
         $normalizedQuery = trim((string) $query);
         $normalizedType = trim((string) $type);
+        $normalizedPopular = trim((string) $popular);
+        $includeBroadText = mb_strlen($normalizedQuery) >= 3;
+        $driver = Saint::query()->getConnection()->getDriverName();
+        $virtuesSearchColumn = $this->jsonSearchColumn('virtues', $driver);
+        $vicesSearchColumn = $this->jsonSearchColumn('vices', $driver);
 
-        return Saint::query()
-            ->with(['aliases', 'feastDays', 'patronages', 'religiousOrders'])
+        $search = Saint::query()
+            ->with($with ?? ['aliases', 'feastDays', 'patronages', 'religiousOrders'])
             ->when($normalizedType !== '', fn (Builder $builder) => $builder->where('canonical_status', $normalizedType))
-            ->when($normalizedQuery !== '', function (Builder $builder) use ($normalizedQuery): void {
+            ->when($normalizedPopular !== '', fn (Builder $builder) => $this->applyPopularFilter($builder, $normalizedPopular))
+            ->when($normalizedQuery !== '', function (Builder $builder) use ($normalizedQuery, $virtuesSearchColumn, $vicesSearchColumn, $includeBroadText): void {
                 $like = '%'.strtolower($normalizedQuery).'%';
 
-                $builder->where(function (Builder $query) use ($like): void {
+                $builder->where(function (Builder $query) use ($like, $virtuesSearchColumn, $vicesSearchColumn, $includeBroadText): void {
                     $query
                         ->whereRaw('lower(primary_name) like ?', [$like])
-                        ->orWhereRaw("lower(coalesce(virtues, '')) like ?", [$like])
-                        ->orWhereRaw("lower(coalesce(vices, '')) like ?", [$like])
+                        ->when($includeBroadText, function (Builder $query) use ($like, $virtuesSearchColumn, $vicesSearchColumn): void {
+                            $query
+                                ->orWhereRaw("lower(coalesce({$virtuesSearchColumn}, '')) like ?", [$like])
+                                ->orWhereRaw("lower(coalesce({$vicesSearchColumn}, '')) like ?", [$like]);
+                        })
                         ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->whereRaw('lower(alias) like ?', [$like]))
-                        ->orWhereHas('patronages', function (Builder $patronages) use ($like): void {
-                            $patronages->where(function (Builder $query) use ($like): void {
+                        ->orWhereHas('patronages', function (Builder $patronages) use ($like, $includeBroadText): void {
+                            $patronages->where(function (Builder $query) use ($like, $includeBroadText): void {
                                 $query
                                     ->whereRaw('lower(name) like ?', [$like])
                                     ->orWhereRaw('lower(slug) like ?', [$like])
-                                    ->orWhereRaw("lower(coalesce(description, '')) like ?", [$like]);
+                                    ->when($includeBroadText, fn (Builder $query) => $query->orWhereRaw("lower(coalesce(description, '')) like ?", [$like]));
                             });
                         });
                 });
@@ -51,8 +65,32 @@ class SaintSearchService
                 'religiousOrders',
                 fn (Builder $orders) => $orders->where('slug', $order)
             ))
-            ->orderBy('primary_name')
-            ->limit(50)
-            ->get();
+            ->orderBy('primary_name');
+
+        if ($perPage !== null) {
+            return $search->simplePaginate($perPage);
+        }
+
+        return $search->limit(50)->get();
+    }
+
+    private function applyPopularFilter(Builder $builder, string $filter): void
+    {
+        match ($filter) {
+            'patron_saints', 'patrons' => $builder->whereHas('patronages'),
+            'martyrs' => $builder->where('is_martyr', true),
+            'men' => $builder->where('gender', 'male'),
+            'women' => $builder->where('gender', 'female'),
+            'doctors' => $builder->where('is_doctor', true),
+            default => null,
+        };
+    }
+
+    private function jsonSearchColumn(string $column, string $driver): string
+    {
+        return match ($driver) {
+            'pgsql' => "\"{$column}\"::text",
+            default => $column,
+        };
     }
 }

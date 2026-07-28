@@ -4,7 +4,7 @@
 
 .saint-cross {
     display: inline-block;
-    margin-inline-end: 0.8em;
+    margin-inline-end: 0.62em;
     color: var(--saint-accent, #4e7b68);
     line-height: 1;
 }
@@ -13,7 +13,9 @@
 .saint-subtitle {
     margin: 0;
     color: var(--saint-accent, #4e7b68);
-    letter-spacing: 0.22em;
+    font-size: clamp(0.72rem, 0.34vw + 0.66rem, 0.88rem);
+    font-weight: 800;
+    letter-spacing: 0.18em;
     line-height: 1.35;
     text-transform: uppercase;
     overflow-wrap: break-word;
@@ -26,21 +28,26 @@
 }
 
 .saint-title-block h1 {
-    margin: 8px 0;
+    max-inline-size: 12ch;
+    margin: 0.5rem 0 0;
     color: var(--saint-text, #143433);
-    line-height: 0.96;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(3rem, 4vw + 1rem, 6.25rem);
+    font-weight: 500;
+    letter-spacing: 0;
+    line-height: 0.95;
     text-transform: uppercase;
 }
 
 .saint-divider {
     content: "";
     display: block;
-    width: 30%;
+    width: min(12rem, 42%);
     height: 2px;
-    margin-top: clamp(10px, 2vh, 18px);
-    margin-left:auto;
-    margin-right:auto;
-    background: var(--saint-accent, #4e7b68);
+    margin-block-start: clamp(1.25rem, 3vh, 2rem);
+    margin-inline: 0;
+    background: linear-gradient(90deg, var(--saint-accent, #4e7b68), transparent);
+    opacity: 0.76;
 }
 
 @media (max-width: 780px) {
@@ -49,15 +56,20 @@
     }
 
     .saint-kicker {
-        letter-spacing: 0.22em;
+        letter-spacing: 0.16em;
     }
 
     .saint-subtitle {
         letter-spacing: 0;
     }
 
-    .saint-subtitle::after {
-        width: 58px;
-        margin: 12px auto 0;
+    .saint-title-block h1 {
+        white-space: nowrap;
+        max-inline-size: 10.5ch;
+        font-size: clamp(2.65rem, 12vw, 5.25rem);
+    }
+
+    .saint-divider {
+        width: min(9rem, 48%);
     }
 }

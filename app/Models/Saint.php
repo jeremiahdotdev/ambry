@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Saint extends Model
 {
@@ -31,6 +32,9 @@ class Saint extends Model
         'ai_reason',
         'ai_confidence',
         'image_prompt',
+        'image_cutout_url',
+        'image_portrait_url',
+        'image_thumb_url',
     ];
 
     protected function casts(): array
@@ -72,6 +76,57 @@ class Saint extends Model
         return $this->formatLifeDatesString($this->life_dates);
     }
 
+    public function displayName(): string
+    {
+        return self::stripLeadingHonorific((string) $this->primary_name);
+    }
+
+    public function displayCanonicalStatus(): string
+    {
+        return match ($this->canonical_status) {
+            'saint' => 'Saint',
+            'pope' => 'Pope',
+            'blessed' => 'Blessed',
+            'venerable' => 'Venerable',
+            'church_father' => 'Church Father',
+            'holy_person' => 'Holy Person',
+            default => Str::of((string) $this->canonical_status)
+                ->replace('_', ' ')
+                ->title()
+                ->toString() ?: 'Holy Person',
+        };
+    }
+
+    public function displayBiography(): ?string
+    {
+        $biography = trim(strip_tags((string) $this->biography));
+
+        if ($biography === '') {
+            return null;
+        }
+
+        $biography = $this->stripLeadingRepeatedName($biography);
+
+        return $biography === '' ? null : $biography;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function displayBiographyParagraphs(): array
+    {
+        $biography = $this->displayBiography();
+
+        if (! $biography) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map('trim', preg_split('/\R{2,}/', $biography) ?: []),
+            fn (string $paragraph): bool => $paragraph !== '',
+        ));
+    }
+
     private function formatLifeYear(?int $year, ?string $qualifier): ?string
     {
         if (! $year) {
@@ -94,6 +149,58 @@ class Saint extends Model
         $lifeDates = preg_replace('/\b(\d{1,4})\s*AD\s*[-–—]\s*(\d{1,4})\s*AD\b/i', '$1-$2 AD', $lifeDates);
 
         return preg_replace('/\s+[-–—]\s+/', '-', $lifeDates);
+    }
+
+    private function stripLeadingRepeatedName(string $biography): string
+    {
+        $paragraphs = preg_split('/\R{2,}/', $biography) ?: [$biography];
+        $first = trim($paragraphs[0] ?? '');
+
+        if ($first !== '' && $this->sameDisplayName($first, (string) $this->primary_name)) {
+            array_shift($paragraphs);
+
+            return trim(implode("\n\n", $paragraphs));
+        }
+
+        foreach ($this->nameVariants() as $name) {
+            $pattern = '/^\s*'.preg_quote($name, '/').'\s*(?:\R+|[-–—:]\s+)/iu';
+            $stripped = preg_replace($pattern, '', $biography, 1);
+
+            if (is_string($stripped) && $stripped !== $biography) {
+                return trim($stripped);
+            }
+        }
+
+        return $biography;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function nameVariants(): array
+    {
+        return array_values(array_unique(array_filter([
+            (string) $this->primary_name,
+            $this->displayName(),
+        ])));
+    }
+
+    private function sameDisplayName(string $left, string $right): bool
+    {
+        return $this->normalizeNameForComparison($left) === $this->normalizeNameForComparison($right);
+    }
+
+    private function normalizeNameForComparison(string $name): string
+    {
+        $name = self::stripLeadingHonorific($name);
+        $name = preg_replace('/[^\pL\pN]+/u', ' ', $name) ?? $name;
+
+        return strtolower(trim(preg_replace('/\s+/', ' ', $name) ?? $name));
+    }
+
+    private static function stripLeadingHonorific(string $name): string
+    {
+        return trim(preg_replace('/^(?:(?:Pope|St\.?|Saint|Bl\.?|Blessed|Ven\.?|Venerable)\s+)+/iu', '', $name) ?? $name);
     }
 
     public function aliases(): HasMany

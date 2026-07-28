@@ -41,27 +41,17 @@
 }
 
 .search-crest {
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: clamp(4.8rem, 11vw, 6.5rem);
-    aspect-ratio: 1;
-    border: 1px solid #d19a52;
-    border-radius: 50%;
+    min-height: clamp(3.2rem, 8vw, 4.4rem);
     color: #d19a52;
-    font-size: clamp(2.2rem, 5vw, 3.5rem);
     line-height: 1;
 }
 
-.search-crest::before {
-    content: "";
-    position: absolute;
-    inset: -2.6rem;
-    border-radius: 50%;
-    background:
-        repeating-conic-gradient(from 0deg, rgb(209 154 82 / 36%) 0deg 1deg, transparent 1deg 8deg);
-    mask-image: radial-gradient(circle, transparent 0 44%, #000 45% 48%, transparent 49%);
+.search-crest span {
+    font-size: clamp(2.6rem, 7vw, 4rem);
+    letter-spacing: 0;
 }
 
 .search-star {
@@ -243,6 +233,125 @@
     stroke-width: 1.5;
 }
 
+.popular-searches {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 0.9rem;
+    padding-bottom: 2rem;
+}
+
+.popular-searches p {
+    margin: 0;
+    color: #8d6d82;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+}
+
+.popular-search-list {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.78rem;
+    width: 100%;
+}
+
+.popular-search-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 7.4rem;
+    min-height: 2.55rem;
+    gap: 0.55rem;
+    border: 1px solid rgb(117 83 62 / 13%);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 70%);
+    box-shadow:
+        0 0.65rem 1.4rem rgb(73 40 34 / 8%),
+        inset 0 1px 0 rgb(255 255 255 / 86%);
+    color: #775462;
+    padding: 0.55rem 1rem;
+    text-decoration: none;
+    transition:
+        background-color 160ms ease,
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        color 160ms ease,
+        transform 160ms ease;
+}
+
+.popular-search-link svg {
+    width: 1.12rem;
+    height: 1.12rem;
+    flex: 0 0 auto;
+    stroke-width: 1.8;
+}
+
+.popular-search-link span {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 0.94rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.popular-search-link:nth-child(1) svg,
+.popular-search-link:nth-child(1):hover,
+.popular-search-link:nth-child(1):focus-visible {
+    color: #684a73;
+}
+
+.popular-search-link:nth-child(2) svg,
+.popular-search-link:nth-child(2):hover,
+.popular-search-link:nth-child(2):focus-visible {
+    color: #bf624f;
+}
+
+.popular-search-link:nth-child(3) svg,
+.popular-search-link:nth-child(3):hover,
+.popular-search-link:nth-child(3):focus-visible {
+    color: #4f8177;
+}
+
+.popular-search-link:nth-child(4) svg,
+.popular-search-link:nth-child(4):hover,
+.popular-search-link:nth-child(4):focus-visible {
+    color: #b76b64;
+}
+
+.popular-search-link:nth-child(5) svg,
+.popular-search-link:nth-child(5):hover,
+.popular-search-link:nth-child(5):focus-visible {
+    color: #c98541;
+}
+
+.popular-search-link:hover,
+.popular-search-link:focus-visible {
+    border-color: rgb(117 83 62 / 22%);
+    background: rgb(255 255 255 / 88%);
+    box-shadow:
+        0 0.8rem 1.55rem rgb(73 40 34 / 10%),
+        inset 0 1px 0 rgb(255 255 255 / 95%);
+    transform: translateY(-1px);
+}
+
+.popular-search-link.is-active {
+    border-color: #4a183f;
+    color: #4a183f;
+}
+
+.popular-search-link.is-active svg {
+    color: #4a183f;
+}
+
+.popular-search-link:focus-visible {
+    outline: 3px solid rgb(201 133 65 / 20%);
+    outline-offset: 3px;
+}
+
 .search-message,
 .search-empty {
     width: 100%;
@@ -261,112 +370,6 @@
     gap: 0.35rem;
     color: #7d6278;
     font-weight: 800;
-}
-
-.search-results {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    gap: 0.7rem;
-}
-
-.search-result {
-    border: 1px solid rgb(91 62 48 / 12%);
-    border-radius: 1rem;
-    background: rgba(255, 255, 255);
-    box-shadow: 0 0.5rem 1.2rem rgb(73 40 34 / 7%);
-    overflow: hidden;
-}
-
-.search-result-link {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    min-height: 5rem;
-    padding: 0.7rem;
-    color: inherit;
-    text-align: left;
-    text-decoration: none;
-}
-
-.search-result-image {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    flex: 0 0 3.6rem;
-    width: 3.6rem;
-    height: 4.2rem;
-    border-radius: 0.8rem;
-    background: #f8efe3;
-    overflow: hidden;
-}
-
-.search-result-image img {
-    display: block;
-    width: 100%;
-    height: 125%;
-    object-fit: contain;
-    object-position: center top;
-}
-
-.search-result-content {
-    display: flex;
-    flex: 1;
-    min-width: 0;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.search-result-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem 0.75rem;
-    color: #c95649;
-    font-size: 0.64rem;
-    font-weight: 800;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-}
-
-.search-result-title {
-    color: #401b3f;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(1.05rem, 3vw, 1.45rem);
-    font-weight: 500;
-    line-height: 1.05;
-    overflow-wrap: break-word;
-}
-
-.search-result-patronages {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-}
-
-.search-result-patronages span {
-    display: inline-flex;
-    align-items: center;
-    min-height: 1.35rem;
-    padding-inline: 0.45rem;
-    border: 1px solid rgb(201 133 65 / 28%);
-    border-radius: 999px;
-    background: rgb(255 246 224 / 62%);
-    color: #7b4a44;
-    font-size: 0.68rem;
-    font-weight: 800;
-    line-height: 1;
-}
-
-.search-result-excerpt {
-    color: #6f5870;
-    font-size: 0.9rem;
-    overflow-wrap: break-word;
-}
-
-.search-result-arrow {
-    display: none;
-    color: #c98541;
-    font-size: 1.25rem;
 }
 
 .search-footer {
@@ -432,6 +435,31 @@
         width: 3rem;
         min-height: 3rem;
         margin-block-start: 0;
+    }
+
+    .popular-searches {
+        width: min(100%, 22rem);
+        gap: 0.75rem;
+        margin-block-start: 0.6rem;
+    }
+
+    .popular-searches p {
+        font-size: 0.66rem;
+        letter-spacing: 0.28em;
+    }
+
+    .popular-search-list {
+        gap: 0.68rem;
+    }
+
+    .popular-search-link {
+        min-width: 8rem;
+        min-height: 2.45rem;
+        padding: 0.5rem 0.9rem;
+    }
+
+    .popular-search-link span {
+        font-size: 0.9rem;
     }
 
     .search-footer {

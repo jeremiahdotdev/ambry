@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Saint;
+use App\Support\GeneratedSaintImages;
+use App\Support\SaintPageVariants;
 use Illuminate\Contracts\View\View;
 
 class SaintProfileController extends Controller
@@ -20,8 +22,9 @@ class SaintProfileController extends Controller
                 default => null,
             },
             'variant' => match ($saint->slug) {
-                'st-patrick' => 'classic',
-                default => 'default',
+                'st-patrick' => 'classic-gold',
+                default => GeneratedSaintImages::recommendedVariant($saint->slug)
+                    ?? SaintPageVariants::defaultForSlug($saint->slug),
             },
         ]);
     }

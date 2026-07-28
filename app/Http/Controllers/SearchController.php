@@ -8,12 +8,37 @@ use Illuminate\Http\Request;
 
 class SearchController extends Controller
 {
+    private const RESULTS_PER_PAGE = 20;
+
     private const SEARCH_TYPES = [
         'saint' => 'Saint',
         'pope' => 'Pope',
         'blessed' => 'Blessed',
         'venerable' => 'Venerable',
         'church_father' => 'Church Father',
+    ];
+
+    private const POPULAR_SEARCHES = [
+        'patron_saints' => [
+            'label' => 'Patron Saints',
+            'icon' => 'shield-check',
+        ],
+        'martyrs' => [
+            'label' => 'Martyrs',
+            'icon' => 'flame',
+        ],
+        'men' => [
+            'label' => 'Men',
+            'icon' => 'mars',
+        ],
+        'women' => [
+            'label' => 'Women',
+            'icon' => 'venus',
+        ],
+        'doctors' => [
+            'label' => 'Doctors',
+            'icon' => 'graduation-cap',
+        ],
     ];
 
     public function __construct(
@@ -23,6 +48,7 @@ class SearchController extends Controller
     public function index(Request $request): View
     {
         $selectedType = $this->selectedType($request);
+        $selectedPopularSearch = $this->selectedPopularSearch($request);
 
         return view('search.index', [
             'query' => '',
@@ -31,6 +57,8 @@ class SearchController extends Controller
             'error' => null,
             'selectedType' => $selectedType,
             'searchTypes' => self::SEARCH_TYPES,
+            'popularSearches' => self::POPULAR_SEARCHES,
+            'selectedPopularSearch' => $selectedPopularSearch,
         ]);
     }
 
@@ -38,8 +66,9 @@ class SearchController extends Controller
     {
         $query = trim((string) $request->query('q'));
         $selectedType = $this->selectedType($request);
+        $selectedPopularSearch = $this->selectedPopularSearch($request);
 
-        if ($query === '') {
+        if ($query === '' && $selectedPopularSearch === null) {
             return view('search.index', [
                 'query' => $query,
                 'results' => [],
@@ -47,23 +76,46 @@ class SearchController extends Controller
                 'error' => 'Enter a search term.',
                 'selectedType' => $selectedType,
                 'searchTypes' => self::SEARCH_TYPES,
+                'popularSearches' => self::POPULAR_SEARCHES,
+                'selectedPopularSearch' => $selectedPopularSearch,
             ]);
         }
 
         return view('search.index', [
             'query' => $query,
-            'results' => $this->saintSearch->search($query, type: $selectedType),
+            'results' => $this->saintSearch
+                ->search($query, type: $selectedType, popular: $selectedPopularSearch, perPage: self::RESULTS_PER_PAGE, with: ['patronages'])
+                ->withQueryString(),
             'searched' => true,
             'error' => null,
             'selectedType' => $selectedType,
             'searchTypes' => self::SEARCH_TYPES,
+            'popularSearches' => self::POPULAR_SEARCHES,
+            'selectedPopularSearch' => $selectedPopularSearch,
         ]);
     }
 
     private function selectedType(Request $request): string
     {
-        $selectedType = (string) $request->query('type', 'saint');
+        $rawType = (string) $request->query('type', 'saint');
+        $selectedType = array_key_exists($rawType, self::SEARCH_TYPES) ? $rawType : 'saint';
 
-        return array_key_exists($selectedType, self::SEARCH_TYPES) ? $selectedType : 'saint';
+        logger()->debug('Search selected type', [
+            'raw_type' => $rawType,
+            'selected_type' => $selectedType,
+            'query' => $request->query('q'),
+            'path' => $request->path(),
+            'full_url' => $request->fullUrl(),
+        ]);
+
+        return $selectedType;
+    }
+
+    private function selectedPopularSearch(Request $request): ?string
+    {
+        $popularSearch = (string) $request->query('popular', '');
+        $popularSearch = $popularSearch === 'patrons' ? 'patron_saints' : $popularSearch;
+
+        return array_key_exists($popularSearch, self::POPULAR_SEARCHES) ? $popularSearch : null;
     }
 }

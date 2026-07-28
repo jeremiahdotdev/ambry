@@ -9,6 +9,10 @@ class SaintProfileController extends Controller
 {
     public function profile(Saint $saint): View
     {
+        $saint->load([
+            'patronages' => fn ($query) => $query->orderBy('name'),
+        ]);
+
         return view('saints.index', [
             'saint' => $saint,
             'subtitle' => match ($saint->slug) {

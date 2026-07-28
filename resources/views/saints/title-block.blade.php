@@ -21,5 +21,4 @@
     @include('saints.life-dates', [
         'lifeDates' => $lifeDates,
     ])
-    <span class="saint-divider"></span>
 </header>

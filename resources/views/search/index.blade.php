@@ -88,7 +88,7 @@
                                 $fallbackPath = $saint->gender === 'female' ? 'saints/default_female.png' : 'saints/default.png';
                                 $imagePath = $hasImage ? $relativePath : $fallbackPath;
                                 $displayName = preg_replace('/^(?:Pope\s+)?(?:St\.|Saint)\s+/i', '', $saint->primary_name);
-                                $lifeDates = $saint->life_dates;
+                                $lifeDates = $saint->displayLifeDates();
                             @endphp
 
                             <article class="search-result">
@@ -97,16 +97,25 @@
                                         <img src="{{ asset($imagePath) }}" alt="">
                                     </span>
                                     <span class="search-result-content">
-                                        <span class="search-result-meta">
+                                        <span class="search-result-title">
                                             <span>{{ $searchTypes[$saint->canonical_status] ?? ucfirst(str_replace('_', ' ', $saint->canonical_status)) }}</span>
+                                            {{ $displayName }}
+                                        </span>
+                                        <span class="search-result-meta">
                                             @if ($lifeDates)
                                                 <span>{{ $lifeDates }}</span>
                                             @endif
                                         </span>
-                                        <span class="search-result-title">{{ $displayName }}</span>
                                         @if ($saint->biography)
-                                            <span class="search-result-excerpt">
-                                                {{ \Illuminate\Support\Str::limit(\Illuminate\Support\Str::of($saint->biography)->stripTags()->squish(), 180) }}
+                                        <span class="search-result-excerpt">
+                                            {{ \Illuminate\Support\Str::limit(\Illuminate\Support\Str::of($saint->biography)->stripTags()->squish(), 180) }}
+                                        </span>
+                                        @endif
+                                        @if ($saint->patronages->isNotEmpty())
+                                            <span class="search-result-patronages" aria-label="Patronages">
+                                                @foreach ($saint->patronages->take(3) as $patronage)
+                                                    <span>{{ $patronage->name }}</span>
+                                                @endforeach
                                             </span>
                                         @endif
                                     </span>

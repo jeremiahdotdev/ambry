@@ -52,6 +52,50 @@ class Saint extends Model
         return 'slug';
     }
 
+    public function displayLifeDates(): ?string
+    {
+        $birth = $this->formatLifeYear($this->birth_year, $this->birth_year_qualifier);
+        $death = $this->formatLifeYear($this->death_year, $this->death_year_qualifier);
+
+        if ($birth && $death) {
+            return "{$birth}-{$death} AD";
+        }
+
+        if ($birth) {
+            return "b. {$birth} AD";
+        }
+
+        if ($death) {
+            return "d. {$death} AD";
+        }
+
+        return $this->formatLifeDatesString($this->life_dates);
+    }
+
+    private function formatLifeYear(?int $year, ?string $qualifier): ?string
+    {
+        if (! $year) {
+            return null;
+        }
+
+        return in_array($qualifier, ['circa', 'probable'], true)
+            ? "c. {$year}"
+            : (string) $year;
+    }
+
+    private function formatLifeDatesString(?string $lifeDates): ?string
+    {
+        $lifeDates = trim((string) $lifeDates);
+
+        if ($lifeDates === '') {
+            return null;
+        }
+
+        $lifeDates = preg_replace('/\b(\d{1,4})\s*AD\s*[-–—]\s*(\d{1,4})\s*AD\b/i', '$1-$2 AD', $lifeDates);
+
+        return preg_replace('/\s+[-–—]\s+/', '-', $lifeDates);
+    }
+
     public function aliases(): HasMany
     {
         return $this->hasMany(SaintAlias::class);

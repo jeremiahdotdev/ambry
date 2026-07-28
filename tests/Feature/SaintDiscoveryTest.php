@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Patronage;
 use App\Models\Saint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -31,6 +32,10 @@ class SaintDiscoveryTest extends TestCase
             'alias' => 'Patricius',
             'normalized_alias' => 'patricius',
         ]);
+        $patrick->patronages()->attach(Patronage::create([
+            'name' => 'Ireland',
+            'slug' => 'ireland',
+        ]));
 
         Saint::create([
             'primary_name' => 'Saint Benedict of Nursia',
@@ -46,6 +51,7 @@ class SaintDiscoveryTest extends TestCase
         $this->get('/search?q=patricius')
             ->assertOk()
             ->assertSee('Patrick')
+            ->assertSee('Ireland')
             ->assertSee(route('saints.profile', $patrick))
             ->assertDontSee('Saint Benedict of Nursia');
 
@@ -56,9 +62,49 @@ class SaintDiscoveryTest extends TestCase
             ->assertDontSee('Saint Brigid');
     }
 
+    public function test_search_scans_virtues_vices_and_patronages(): void
+    {
+        $monica = Saint::create([
+            'primary_name' => 'Saint Monica',
+            'slug' => 'saint-monica',
+            'virtues' => ['patience', 'perseverance'],
+            'vices' => ['despair'],
+        ]);
+
+        $patronage = Patronage::create([
+            'name' => 'Mothers',
+            'slug' => 'mothers',
+            'description' => 'Parents seeking conversion in their families.',
+        ]);
+
+        $monica->patronages()->attach($patronage);
+
+        Saint::create([
+            'primary_name' => 'Saint Augustine',
+            'slug' => 'saint-augustine',
+            'virtues' => ['wisdom'],
+            'vices' => ['pride'],
+        ]);
+
+        $this->get('/search?q=perseverance')
+            ->assertOk()
+            ->assertSee('Monica')
+            ->assertDontSee('Saint Augustine');
+
+        $this->get('/search?q=despair')
+            ->assertOk()
+            ->assertSee('Monica')
+            ->assertDontSee('Saint Augustine');
+
+        $this->get('/search?q=conversion')
+            ->assertOk()
+            ->assertSee('Monica')
+            ->assertDontSee('Saint Augustine');
+    }
+
     public function test_saint_page_renders_the_saint_layout(): void
     {
-        Saint::create([
+        $patrick = Saint::create([
             'primary_name' => 'St. Patrick',
             'slug' => 'st-patrick',
             'biography' => 'Apostle of Ireland.',
@@ -67,12 +113,20 @@ class SaintDiscoveryTest extends TestCase
             'life_dates' => '387 AD - 493 AD',
         ]);
 
+        $patrick->patronages()->attach(Patronage::create([
+            'name' => 'Ireland',
+            'slug' => 'ireland',
+        ]));
+
         $this->get('/saints/st-patrick')
             ->assertOk()
             ->assertSee('Patrick')
             ->assertSee('Bishop and Patron of Ireland')
-            ->assertSee('387 AD')
-            ->assertSee('493 AD')
+            ->assertSee('387-493 AD')
+            ->assertSee('Patronages')
+            ->assertSee('Ireland')
+            ->assertSee(route('search.results', ['q' => 'Ireland']))
+            ->assertSeeInOrder(['Patronages', 'Ireland', 'Apostle of Ireland.'])
             ->assertSee('saints/st-patrick.png')
             ->assertSee('Back to search')
             ->assertSee('Apostle of Ireland.');

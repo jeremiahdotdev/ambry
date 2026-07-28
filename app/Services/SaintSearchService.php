@@ -30,7 +30,17 @@ class SaintSearchService
                 $builder->where(function (Builder $query) use ($like): void {
                     $query
                         ->whereRaw('lower(primary_name) like ?', [$like])
-                        ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->whereRaw('lower(alias) like ?', [$like]));
+                        ->orWhereRaw("lower(coalesce(virtues, '')) like ?", [$like])
+                        ->orWhereRaw("lower(coalesce(vices, '')) like ?", [$like])
+                        ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->whereRaw('lower(alias) like ?', [$like]))
+                        ->orWhereHas('patronages', function (Builder $patronages) use ($like): void {
+                            $patronages->where(function (Builder $query) use ($like): void {
+                                $query
+                                    ->whereRaw('lower(name) like ?', [$like])
+                                    ->orWhereRaw('lower(slug) like ?', [$like])
+                                    ->orWhereRaw("lower(coalesce(description, '')) like ?", [$like]);
+                            });
+                        });
                 });
             })
             ->when($patronage, fn (Builder $builder) => $builder->whereHas(

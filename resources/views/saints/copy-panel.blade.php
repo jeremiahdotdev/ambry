@@ -2,8 +2,23 @@
     @include('saints.title-block', [
         'name' => $saint->primary_name,
         'subtitle' => $subtitle ?? null,
-        'lifeDates' => $saint->life_dates,
+        'lifeDates' => $saint->displayLifeDates(),
     ])
+
+    @if ($saint->patronages->isNotEmpty())
+        <section class="saint-patronages" aria-labelledby="saint-patronages-title">
+            <h2 id="saint-patronages-title">Patronages</h2>
+            <ul>
+                @foreach ($saint->patronages as $patronage)
+                    <li>
+                        <a href="{{ route('search.results', ['q' => $patronage->name]) }}">{{ $patronage->name }}</a>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
+
+    <span class="saint-divider"></span>
 
     @if ($saint->biography)
         <div class="saint-intro">

@@ -5,7 +5,7 @@
     flex-direction: column;
     justify-content: center;
     align-self: flex-start;
-    inline-size: calc(100% - 1rem);
+    inline-size: 100%;
     margin-block-start: 52svh;
     margin-inline-end: 1rem;
     padding: 6svh 8vw 4svh;
@@ -32,6 +32,50 @@
 
 .saint-intro p + p {
     margin-block-start: 1em;
+}
+
+.saint-patronages {
+    margin-block-start: 1.5rem;
+    color: var(--saint-text, var(--color-foreground));
+}
+
+.saint-patronages h2 {
+    margin: 0;
+    color: var(--saint-accent, #4e7b68);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.saint-patronages ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.65rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.saint-patronages a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding-inline: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--saint-accent, #4e7b68) 32%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--saint-card, #f7f8ee) 76%, white);
+    color: var(--saint-text, var(--color-foreground));
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.saint-patronages a:hover,
+.saint-patronages a:focus-visible {
+    border-color: var(--saint-accent, #4e7b68);
+    color: var(--saint-accent, #4e7b68);
 }
 
 .saint-copy-panel > * {

@@ -24,6 +24,33 @@ function set_default_env(string $key, string $value): void
     $_SERVER[$key] = $value;
 }
 
+function neon_endpoint_id(): ?string
+{
+    foreach (['DB_URL', 'DATABASE_URL', 'POSTGRES_URL'] as $key) {
+        $url = getenv($key);
+
+        if ($url === false || $url === '') {
+            continue;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (is_string($host) && str_starts_with($host, 'ep-')) {
+            return explode('.', $host, 2)[0];
+        }
+    }
+
+    foreach (['DB_HOST', 'PGHOST', 'POSTGRES_HOST'] as $key) {
+        $host = getenv($key);
+
+        if (is_string($host) && str_starts_with($host, 'ep-')) {
+            return explode('.', $host, 2)[0];
+        }
+    }
+
+    return null;
+}
+
 $storagePath = '/tmp/laravel-storage';
 
 foreach ([
@@ -43,13 +70,18 @@ set_default_env('APP_DEBUG', 'false');
 set_default_env('APP_URL', 'https://'.($_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost'));
 set_default_env('BCRYPT_ROUNDS', '12');
 set_default_env('CACHE_STORE', 'array');
-set_default_env('DB_DATABASE', dirname(__DIR__).'/database/database.sqlite');
 set_default_env(
     'DB_CONNECTION',
     getenv('DB_URL') !== false || getenv('DATABASE_URL') !== false || getenv('POSTGRES_URL') !== false
         ? 'pgsql'
         : 'sqlite'
 );
+if (getenv('DB_CONNECTION') === 'sqlite') {
+    set_default_env('DB_DATABASE', dirname(__DIR__).'/database/database.sqlite');
+}
+if ($endpointId = neon_endpoint_id()) {
+    set_default_env('PGOPTIONS', "endpoint={$endpointId}");
+}
 set_default_env('LOG_CHANNEL', 'stderr');
 set_default_env('QUEUE_CONNECTION', 'sync');
 set_default_env('SESSION_DRIVER', 'cookie');

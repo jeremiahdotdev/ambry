@@ -3,10 +3,107 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command('sources:load-split {path=tools/pipeline/build/structured/manifest.json}', function (): int {
+    $path = base_path((string) $this->argument('path'));
+
+    if (! is_file($path)) {
+        $this->error("Manifest not found: {$path}");
+
+        return self::FAILURE;
+    }
+
+    $manifest = json_decode((string) file_get_contents($path), true);
+
+    if (! is_array($manifest) || ! is_array($manifest['tables'] ?? null)) {
+        $this->error('Manifest must include a tables object.');
+
+        return self::FAILURE;
+    }
+
+    $baseDir = dirname($path);
+    $loadRows = function (string $table) use ($manifest, $baseDir): array {
+        $entry = $manifest['tables'][$table] ?? null;
+
+        if (! is_array($entry) || ! is_string($entry['path'] ?? null)) {
+            throw new RuntimeException("Manifest is missing {$table}.path");
+        }
+
+        $payload = json_decode((string) file_get_contents($baseDir.DIRECTORY_SEPARATOR.$entry['path']), true);
+
+        if (! is_array($payload) || ! is_array($payload['rows'] ?? null)) {
+            throw new RuntimeException("{$entry['path']} must include a rows array");
+        }
+
+        return $payload['rows'];
+    };
+    $now = now();
+    $encodeJson = fn ($value): ?string => $value === null ? null : json_encode($value, JSON_UNESCAPED_UNICODE);
+    $upsert = function (string $table, array $rows, array $uniqueBy, array $updateColumns): void {
+        foreach (array_chunk($rows, 250) as $chunk) {
+            DB::table($table)->upsert($chunk, $uniqueBy, $updateColumns);
+        }
+    };
+
+    $sources = array_map(fn (array $row): array => [
+        'id' => $row['id'] ?? (string) Str::uuid(),
+        'name' => $row['name'],
+        'slug' => $row['slug'],
+        'type' => $row['type'] ?? null,
+        'license' => $row['license'] ?? null,
+        'attribution' => $row['attribution'] ?? null,
+        'canonical_url' => $row['canonical_url'] ?? null,
+        'reliability_notes' => $row['reliability_notes'] ?? null,
+        'created_at' => $now,
+        'updated_at' => $now,
+    ], $loadRows('sources'));
+
+    $sourceDocuments = array_map(fn (array $row): array => [
+        'id' => $row['id'] ?? (string) Str::uuid(),
+        'source_id' => $row['source_id'],
+        'title' => $row['title'],
+        'slug' => $row['slug'] ?? null,
+        'author' => $row['author'] ?? null,
+        'edition' => $row['edition'] ?? null,
+        'language' => $row['language'] ?? 'en',
+        'url' => $row['url'] ?? null,
+        'raw_text' => $row['raw_text'] ?? null,
+        'checksum' => $row['checksum'] ?? null,
+        'metadata' => $encodeJson($row['metadata'] ?? null),
+        'created_at' => $now,
+        'updated_at' => $now,
+    ], $loadRows('source_documents'));
+
+    $citations = array_map(fn (array $row): array => [
+        'id' => $row['id'] ?? (string) Str::uuid(),
+        'source_id' => $row['source_id'] ?? null,
+        'title' => $row['title'] ?? null,
+        'locator' => $row['locator'] ?? null,
+        'url' => $row['url'] ?? null,
+        'excerpt' => $row['excerpt'] ?? null,
+        'accessed_at' => $row['accessed_at'] ?? null,
+        'created_at' => $now,
+        'updated_at' => $now,
+    ], $loadRows('citations'));
+
+    $upsert('sources', $sources, ['id'], ['name', 'slug', 'type', 'license', 'attribution', 'canonical_url', 'reliability_notes', 'updated_at']);
+    $upsert('source_documents', $sourceDocuments, ['id'], ['source_id', 'title', 'slug', 'author', 'edition', 'language', 'url', 'raw_text', 'checksum', 'metadata', 'updated_at']);
+    $upsert('citations', $citations, ['id'], ['source_id', 'title', 'locator', 'url', 'excerpt', 'accessed_at', 'updated_at']);
+
+    $this->info(sprintf(
+        'Loaded %s sources, %s source documents, %s citations.',
+        number_format(count($sources)),
+        number_format(count($sourceDocuments)),
+        number_format(count($citations)),
+    ));
+
+    return self::SUCCESS;
+})->purpose('Load split DB-ready source documents and citations into the active database connection.');
 
 Artisan::command('db:copy-sqlite-to-pgsql {--source=database/database.sqlite} {--fresh : Drop and recreate the target schema before copying} {--dry-run : Show what would be copied without writing}', function (): int {
     $source = base_path((string) $this->option('source'));

@@ -17,8 +17,8 @@ class SaintDiscoveryTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Ambry')
-            ->assertSee('Search by name, virtue, or keyword')
-            ->assertSee('Search saints...')
+            ->assertSee('Search by name, virtue, or patronage')
+            ->assertSee('Search by name, virtue, or patronage...')
             ->assertDontSee('Church Father')
             ->assertDontSee('Church Fathers');
     }

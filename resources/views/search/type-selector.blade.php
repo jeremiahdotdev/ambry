@@ -30,12 +30,6 @@
                 aria-selected="{{ $selected === $value ? 'true' : 'false' }}"
             data-search-type-option
             data-value="{{ $value }}"
-            data-plural="{{ match ($value) {
-                'blessed' => 'blesseds',
-                'pope' => 'popes',
-                'venerable' => 'venerables',
-                default => 'saints',
-            } }}"
         >
             {{ $label }}
         </button>

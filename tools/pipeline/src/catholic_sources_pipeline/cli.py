@@ -6,10 +6,21 @@ from pathlib import Path
 from .ai_enrichment import AiEnrichmentOptions, run_ai_enrichment
 from .background_removal import BackgroundRemovalOptions, run_background_removal
 from .blob_upload import BlobUploadOptions, run_blob_upload
+from .console_app import run_image_console
 from .db_ready import write_db_ready_payload
 from .images import ImageGenerationOptions, StyleContextOptions, prepare_style_context, run_image_generation
 from .load_sqlite import load_db_ready_json, load_saints_json
 from .new_advent import write_new_advent_payload
+
+
+def _database_and_path(database: str | None, path: Path | None, *, path_name: str) -> tuple[str, Path]:
+    if path is None:
+        if database is None:
+            raise RuntimeError(f"{path_name} is required")
+
+        return "app", Path(database)
+
+    return database or "app", path
 
 
 def main() -> int:
@@ -96,9 +107,10 @@ def main() -> int:
         "generate-images",
         help="Generate local saint portrait PNGs from stored image_prompt values.",
     )
-    generate_images.add_argument("database", type=Path, help="SQLite database path.")
+    generate_images.add_argument("database", nargs="?", default=None, help="Legacy database target, or the output directory when only one path is passed.")
     generate_images.add_argument(
         "output",
+        nargs="?",
         type=Path,
         help="Local output directory for generated PNG and metadata files.",
     )
@@ -125,6 +137,16 @@ def main() -> int:
     generate_images.add_argument("--limit", type=int, default=1)
     generate_images.add_argument("--offset", type=int, default=0)
     generate_images.add_argument("--slug", default=None, help="Generate a specific saint by slug.")
+    generate_images.add_argument(
+        "--canonical-status",
+        default=None,
+        help="Only generate rows with this canonical_status value, e.g. saint.",
+    )
+    generate_images.add_argument(
+        "--has-patronages",
+        action="store_true",
+        help="Only generate saints with at least one patronage link.",
+    )
     generate_images.add_argument(
         "--style-reference",
         action="append",
@@ -211,9 +233,10 @@ def main() -> int:
         "upload-saint-blobs",
         help="Upload transparent saint image assets to Vercel Blob and store public URLs on saints.",
     )
-    upload_blobs.add_argument("database", type=Path, help="SQLite database path.")
+    upload_blobs.add_argument("database", nargs="?", default=None, help="Legacy database target, or the input directory when only one path is passed.")
     upload_blobs.add_argument(
         "input",
+        nargs="?",
         type=Path,
         help="Transparent saint image directory, e.g. storage/app/generated/background-removed/saints.",
     )
@@ -221,6 +244,11 @@ def main() -> int:
     upload_blobs.add_argument("--slug", default=None)
     upload_blobs.add_argument("--limit", type=int, default=1)
     upload_blobs.add_argument("--offset", type=int, default=0)
+    upload_blobs.add_argument(
+        "--missing-only",
+        action="store_true",
+        help="Only upload complete local asset folders whose DB URL columns are missing.",
+    )
     upload_blobs.add_argument("--all", action="store_true")
     upload_blobs.add_argument(
         "--node-script",
@@ -228,6 +256,24 @@ def main() -> int:
         default=Path("tools/pipeline/bin/upload-vercel-blob.mjs"),
     )
     upload_blobs.add_argument("--dry-run", action="store_true")
+
+    image_console = subparsers.add_parser(
+        "image-console",
+        help="Interactive console for generating, processing, uploading, and syncing saint images.",
+    )
+    image_console.add_argument("--database", default="app")
+    image_console.add_argument("--generated-dir", type=Path, default=Path("storage/app/generated/saints"))
+    image_console.add_argument(
+        "--processed-dir",
+        type=Path,
+        default=Path("storage/app/generated/background-removed/saints"),
+    )
+    image_console.add_argument(
+        "--style-context",
+        type=Path,
+        default=Path("storage/app/generated/openai-style-context.json"),
+    )
+    image_console.add_argument("--batch-size", type=int, default=10)
 
     args = parser.parse_args()
 
@@ -306,6 +352,7 @@ def main() -> int:
         return 0
 
     if args.command == "generate-images":
+        database_target, output_dir = _database_and_path(args.database, args.output, path_name="output")
         style_references = ()
         if not args.no_style_references:
             style_references = tuple(args.style_reference) if args.style_reference else (
@@ -314,8 +361,8 @@ def main() -> int:
 
         counts = run_image_generation(
             ImageGenerationOptions(
-                database_path=args.database,
-                output_dir=args.output,
+                database_path=database_target,
+                output_dir=output_dir,
                 model=args.model,
                 response_model=args.response_model,
                 size=args.size,
@@ -330,6 +377,8 @@ def main() -> int:
                 limit=None if args.all else args.limit,
                 offset=args.offset,
                 slug=args.slug,
+                canonical_status=args.canonical_status,
+                has_patronages=args.has_patronages,
                 force=args.force,
                 dry_run=args.dry_run,
                 style_references=style_references,
@@ -383,14 +432,16 @@ def main() -> int:
         return 0
 
     if args.command == "upload-saint-blobs":
+        database_target, input_dir = _database_and_path(args.database, args.input, path_name="input")
         counts = run_blob_upload(
             BlobUploadOptions(
-                database_path=args.database,
-                input_dir=args.input,
+                database_path=database_target,
+                input_dir=input_dir,
                 prefix=args.prefix,
                 slug=args.slug,
                 limit=None if args.all else args.limit,
                 offset=args.offset,
+                missing_only=args.missing_only,
                 node_script=args.node_script,
                 dry_run=args.dry_run,
             )
@@ -404,6 +455,15 @@ def main() -> int:
         )
 
         return 0
+
+    if args.command == "image-console":
+        return run_image_console(
+            database_path=args.database,
+            generated_dir=args.generated_dir,
+            processed_dir=args.processed_dir,
+            style_context_path=args.style_context,
+            batch_size=args.batch_size,
+        )
 
     parser.error("Unknown command")
 

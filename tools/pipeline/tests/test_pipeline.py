@@ -287,7 +287,7 @@ class PipelineSmokeTest(unittest.TestCase):
                 )
             )
 
-        self.assertEqual(1, counts["selected"])
+        self.assertEqual(0, counts["selected"])
         self.assertEqual(1, counts["skipped"])
         self.assertEqual(0, counts["generated"])
 
@@ -327,6 +327,55 @@ class PipelineSmokeTest(unittest.TestCase):
             )
 
         self.assertEqual(1, counts["selected"])
+        self.assertEqual(0, counts["generated"])
+
+    def test_image_generation_dry_run_selects_saints_with_patronages(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            db_path = workspace / "database.sqlite"
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.executescript(
+                """
+                create table saints (
+                    id text primary key,
+                    primary_name text not null,
+                    slug text not null,
+                    life_dates text,
+                    gender text,
+                    canonical_status text,
+                    image_prompt text
+                );
+                create table patronage_saint (
+                    saint_id text not null,
+                    patronage_id text not null
+                );
+                insert into saints (
+                    id, primary_name, slug, life_dates, gender, canonical_status, image_prompt
+                ) values
+                    ('1', 'St. Agnes of Rome', 'st-agnes-of-rome', null, 'female', 'saint', 'Young Roman martyr.'),
+                    ('2', 'St. Scholastica', 'st-scholastica', null, 'female', 'saint', 'Benedictine abbess.'),
+                    ('3', 'Blessed Sample', 'blessed-sample', null, null, 'blessed', 'Devotional portrait.');
+                insert into patronage_saint (saint_id, patronage_id) values
+                    ('2', 'patronage-1'),
+                    ('3', 'patronage-1');
+                """
+            )
+            connection.close()
+
+            counts = run_image_generation(
+                ImageGenerationOptions(
+                    database_path=db_path,
+                    output_dir=workspace / "images",
+                    dry_run=True,
+                    canonical_status="saint",
+                    has_patronages=True,
+                    limit=10,
+                )
+            )
+
+        self.assertEqual(1, counts["selected"])
+        self.assertEqual(0, counts["skipped"])
         self.assertEqual(0, counts["generated"])
 
     def test_image_prompt_adds_collection_style_constraints(self) -> None:
@@ -529,6 +578,83 @@ class PipelineSmokeTest(unittest.TestCase):
         self.assertEqual("St. Agnes of Rome", holy_people["rows"][0]["primary_name"])
         self.assertEqual(1, manifest["tables"]["holy_people"]["count"])
         self.assertNotIn("saints", manifest["tables"])
+
+    def test_sqlite_loader_accepts_split_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            input_path = workspace / "new-advent.json"
+            output_dir = workspace / "db-ready"
+            db_path = workspace / "database.sqlite"
+
+            input_path.write_text(
+                json.dumps(
+                    {
+                    "documents": [
+                        {
+                            "title": "St. Agnes of Rome.",
+                            "relative_path": "cathen/01214a.htm",
+                            "text": "Virgin martyr of Rome.",
+                            "raw_html": "<html>Virgin martyr of Rome.</html>",
+                            "metadata": {"citation": {"apaauthor": "Author Name."}},
+                        }
+                    ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            write_db_ready_payload(input_path, output_dir)
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.executescript(
+                """
+                create table sources (
+                    id text primary key,
+                    name text not null,
+                    slug text not null unique,
+                    type text,
+                    license text,
+                    attribution text,
+                    canonical_url text,
+                    reliability_notes text,
+                    created_at text,
+                    updated_at text
+                );
+                create table source_documents (
+                    id text primary key,
+                    source_id text not null,
+                    title text not null,
+                    slug text,
+                    author text,
+                    edition text,
+                    language text not null default 'en',
+                    url text,
+                    raw_text text,
+                    checksum text,
+                    metadata text,
+                    created_at text,
+                    updated_at text
+                );
+                create table citations (
+                    id text primary key,
+                    source_id text,
+                    title text,
+                    locator text,
+                    url text,
+                    excerpt text,
+                    accessed_at text,
+                    created_at text,
+                    updated_at text
+                );
+                """
+            )
+            connection.close()
+
+            counts = load_db_ready_json(output_dir / "manifest.json", db_path)
+
+            self.assertEqual(1, counts["sources"])
+            self.assertEqual(1, counts["source_documents"])
+            self.assertEqual(1, counts["citations"])
 
     def test_sqlite_loader_loads_source_tables(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

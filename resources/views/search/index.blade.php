@@ -53,7 +53,7 @@
                     <span>✧</span>
                     <span></span>
                 </div>
-                <p class="search-pretitle">Search by name, virtue, or keyword</p>
+                <p class="search-pretitle">Search by name, virtue, or patronage</p>
             </header>
 
             <section class="search-shell" aria-label="Saint search">
@@ -66,7 +66,7 @@
                             name="q"
                             type="search"
                             value="{{ $query }}"
-                            placeholder="Search {{ strtolower($selectedTypePlural) }}..."
+                            placeholder="Search by name, virtue, or patronage..."
                             autofocus
                         >
                     </div>

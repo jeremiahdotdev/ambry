@@ -4,11 +4,14 @@ import base64
 from contextlib import ExitStack
 import json
 import os
-import sqlite3
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
+from time import perf_counter
 from typing import Any
+
+from .database import DatabaseTarget, database_label, query_rows
+from .logging import log
 
 
 DEFAULT_STYLE_REFERENCES = (
@@ -41,7 +44,7 @@ PAGE_VARIANTS = {
 
 @dataclass(frozen=True)
 class ImageGenerationOptions:
-    database_path: Path
+    database_path: DatabaseTarget
     output_dir: Path
     model: str = "gpt-image-2"
     response_model: str = "gpt-5.6"
@@ -57,6 +60,8 @@ class ImageGenerationOptions:
     limit: int | None = 1
     offset: int = 0
     slug: str | None = None
+    canonical_status: str | None = None
+    has_patronages: bool = False
     force: bool = False
     dry_run: bool = False
     style_references: tuple[Path, ...] = DEFAULT_STYLE_REFERENCES
@@ -74,7 +79,7 @@ class StyleContextOptions:
 def prepare_style_context(options: StyleContextOptions) -> dict[str, int]:
     if options.dry_run:
         for path in options.style_references:
-            print(f"would upload style reference: {path}")
+            log(f"would upload style reference: {path}")
 
         return {
             "uploaded": 0,
@@ -107,6 +112,7 @@ def prepare_style_context(options: StyleContextOptions) -> dict[str, int]:
     uploaded = []
 
     for path in references:
+        log(f"Uploading style reference: {path}")
         with path.open("rb") as file:
             result = client.files.create(file=file, purpose="vision")
 
@@ -118,7 +124,7 @@ def prepare_style_context(options: StyleContextOptions) -> dict[str, int]:
                 "bytes": getattr(result, "bytes", path.stat().st_size),
             }
         )
-        print(f"Uploaded {path} as {result.id}")
+        log(f"Uploaded {path} as {result.id}")
 
     options.output_path.parent.mkdir(parents=True, exist_ok=True)
     options.output_path.write_text(
@@ -141,28 +147,44 @@ def prepare_style_context(options: StyleContextOptions) -> dict[str, int]:
 
 
 def run_image_generation(options: ImageGenerationOptions) -> dict[str, int]:
-    rows = _select_saints(options)
-    selected = [
+    selector_options = options
+
+    if not options.slug and not options.force and options.limit is not None:
+        selector_options = replace(options, limit=None, offset=0)
+
+    rows = _select_saints(selector_options)
+    missing = [
         row
         for row in rows
         if options.force or not _image_path(options.output_dir, row["slug"]).exists()
     ]
 
+    if not options.slug and not options.force and options.limit is not None:
+        selected = missing[options.offset:options.offset + options.limit]
+    else:
+        selected = missing
+
+    log(
+        "Image generation queue: "
+        f"{len(selected)} selected, {len(rows) - len(missing)} skipped existing, "
+        f"{len(missing)} missing total, db={database_label(options.database_path)}"
+    )
+
     if options.dry_run:
         for row in selected:
-            print(f"{row['slug']}: {_image_path(options.output_dir, row['slug'])}")
+            log(f"{row['slug']}: {_image_path(options.output_dir, row['slug'])}")
 
         if options.style_context_path and options.style_context_path.exists():
             manifest = _read_style_context(options.style_context_path)
             for reference in manifest["references"]:
-                print(f"style context file: {reference['file_id']} ({reference['path']})")
+                log(f"style context file: {reference['file_id']} ({reference['path']})")
         else:
             for path in options.style_references:
-                print(f"style reference: {path}")
+                log(f"style reference: {path}")
 
         return {
-            "selected": len(rows),
-            "skipped": len(rows) - len(selected),
+            "selected": len(selected),
+            "skipped": len(rows) - len(missing),
             "generated": 0,
         }
 
@@ -179,13 +201,20 @@ def run_image_generation(options: ImageGenerationOptions) -> dict[str, int]:
         if options.style_context_path and options.style_context_path.exists()
         else None
     )
+    log(
+        "Image generation started: "
+        f"model={options.model}, size={options.size}, quality={options.quality}, "
+        f"style_context={'yes' if style_context else 'no'}, design_analysis={options.design_analysis}"
+    )
 
-    for row in selected:
+    for index, row in enumerate(selected, start=1):
         full_prompt = build_portrait_prompt(row, options.size)
         image_path = _image_path(options.output_dir, row["slug"])
         metadata_path = _metadata_path(options.output_dir, row["slug"])
         image_path.parent.mkdir(parents=True, exist_ok=True)
         style_references = _existing_style_references(options.style_references)
+        log(f"[{index}/{len(selected)}] Requesting image for {row['slug']} ({row['primary_name']})")
+        request_started = perf_counter()
 
         if style_context:
             result = _create_response_image(client, row, full_prompt, options, style_context)
@@ -228,18 +257,24 @@ def run_image_generation(options: ImageGenerationOptions) -> dict[str, int]:
             image_base64 = result.data[0].b64_json
             response_metadata = _image_api_metadata(result)
 
+        log(f"[{index}/{len(selected)}] OpenAI image returned for {row['slug']} in {_elapsed(request_started)}")
         image_path.write_bytes(base64.b64decode(image_base64))
+        log(f"[{index}/{len(selected)}] Wrote original PNG: {image_path}")
         derivatives = _write_webp_derivatives(image_path, options)
-        design_recommendation = (
-            _recommend_page_variant(
+        log(f"[{index}/{len(selected)}] Wrote local WebP derivatives for {row['slug']}")
+        design_recommendation = None
+
+        if options.design_analysis == "model":
+            analysis_started = perf_counter()
+            log(f"[{index}/{len(selected)}] Requesting design analysis for {row['slug']}")
+            design_recommendation = _recommend_page_variant(
                 client,
                 row,
                 image_path,
                 options,
             )
-            if options.design_analysis == "model"
-            else None
-        )
+            log(f"[{index}/{len(selected)}] Design analysis returned for {row['slug']} in {_elapsed(analysis_started)}")
+
         metadata_path.write_text(
             json.dumps(
                 _metadata(
@@ -258,13 +293,17 @@ def run_image_generation(options: ImageGenerationOptions) -> dict[str, int]:
             encoding="utf-8",
         )
         generated += 1
-        print(f"Wrote {image_path}")
+        log(f"[{index}/{len(selected)}] Finished {row['slug']}")
 
     return {
-        "selected": len(rows),
-        "skipped": len(rows) - len(selected),
+        "selected": len(selected),
+        "skipped": len(rows) - len(missing),
         "generated": generated,
     }
+
+
+def _elapsed(started: float) -> str:
+    return f"{perf_counter() - started:.1f}s"
 
 
 def build_portrait_prompt(row: dict[str, Any], size: str | None = None) -> str:
@@ -357,9 +396,6 @@ def _write_webp_derivatives(image_path: Path, options: ImageGenerationOptions) -
 
 
 def _select_saints(options: ImageGenerationOptions) -> list[dict[str, Any]]:
-    if not options.database_path.exists():
-        raise FileNotFoundError(f"SQLite database not found: {options.database_path}")
-
     filters = [
         "image_prompt is not null",
         "trim(image_prompt) != ''",
@@ -370,26 +406,32 @@ def _select_saints(options: ImageGenerationOptions) -> list[dict[str, Any]]:
         filters.append("slug = ?")
         params.append(options.slug)
 
+    if options.canonical_status:
+        filters.append("lower(canonical_status) = lower(?)")
+        params.append(options.canonical_status)
+
+    if options.has_patronages:
+        filters.append(
+            "exists (select 1 from patronage_saint where patronage_saint.saint_id = saints.id)"
+        )
+
     limit_sql = "" if options.limit is None or options.slug else "limit ? offset ?"
 
     if options.limit is not None:
         if not options.slug:
             params.extend([options.limit, options.offset])
 
-    with sqlite3.connect(options.database_path) as connection:
-        connection.row_factory = sqlite3.Row
-        rows = connection.execute(
-            f"""
-            select id, primary_name, slug, life_dates, gender, canonical_status, image_prompt
-            from saints
-            where {' and '.join(filters)}
-            order by slug
-            {limit_sql}
-            """,
-            params,
-        ).fetchall()
-
-    return [dict(row) for row in rows]
+    return query_rows(
+        options.database_path,
+        f"""
+        select id, primary_name, slug, life_dates, gender, canonical_status, image_prompt
+        from saints
+        where {' and '.join(filters)}
+        order by slug
+        {limit_sql}
+        """,
+        params,
+    )
 
 
 def _metadata(

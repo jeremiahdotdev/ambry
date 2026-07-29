@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from catholic_sources_pipeline.logging import log
+
 
 @dataclass(frozen=True)
 class BackgroundRemovalOptions:
@@ -42,10 +44,14 @@ def run_background_removal(options: BackgroundRemovalOptions) -> dict[str, int]:
         for source in sources
         if options.force or not _output_image_path(options, source).exists()
     ]
+    log(
+        "Background removal queue: "
+        f"{len(selected)} selected, {len(sources) - len(selected)} skipped existing"
+    )
 
     if options.dry_run:
         for source in selected:
-            print(f"{source.name}: {source / options.source_filename} -> {_output_image_path(options, source)}")
+            log(f"{source.name}: {source / options.source_filename} -> {_output_image_path(options, source)}")
 
         return {
             "selected": len(sources),
@@ -56,11 +62,13 @@ def run_background_removal(options: BackgroundRemovalOptions) -> dict[str, int]:
     _ensure_pillow()
     session = _new_rembg_session(options) if options.provider == "rembg" else None
     processed = 0
+    log(f"Background removal started: provider={options.provider}")
 
-    for source in selected:
+    for index, source in enumerate(selected, start=1):
         output_image_path = _output_image_path(options, source)
         output_image_path.parent.mkdir(parents=True, exist_ok=True)
         source_image_path = source / options.source_filename
+        log(f"[{index}/{len(selected)}] Removing background for {source.name}")
 
         if options.provider == "light-bg":
             _remove_light_background(source_image_path, output_image_path, options)
@@ -73,7 +81,7 @@ def run_background_removal(options: BackgroundRemovalOptions) -> dict[str, int]:
         derivatives = _write_webp_derivatives(output_image_path, options)
         _write_metadata(source, output_image_path, derivatives, options)
         processed += 1
-        print(f"Wrote {output_image_path}")
+        log(f"[{index}/{len(selected)}] Wrote transparent assets: {output_image_path.parent}")
 
     return {
         "selected": len(sources),

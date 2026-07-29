@@ -43,8 +43,13 @@ set_default_env('APP_DEBUG', 'false');
 set_default_env('APP_URL', 'https://'.($_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost'));
 set_default_env('BCRYPT_ROUNDS', '12');
 set_default_env('CACHE_STORE', 'array');
-set_default_env('DB_CONNECTION', 'sqlite');
 set_default_env('DB_DATABASE', dirname(__DIR__).'/database/database.sqlite');
+set_default_env(
+    'DB_CONNECTION',
+    getenv('DB_URL') !== false || getenv('DATABASE_URL') !== false || getenv('POSTGRES_URL') !== false
+        ? 'pgsql'
+        : 'sqlite'
+);
 set_default_env('LOG_CHANNEL', 'stderr');
 set_default_env('QUEUE_CONNECTION', 'sync');
 set_default_env('SESSION_DRIVER', 'cookie');

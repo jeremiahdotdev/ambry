@@ -3,11 +3,13 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
-import sqlite3
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from .database import DatabaseTarget, database_label, ensure_sqlite_columns, execute, query_rows
+from .logging import log
 
 
 ASSETS: dict[str, tuple[str, str]] = {
@@ -25,19 +27,21 @@ URL_COLUMNS: dict[str, str] = {
 
 @dataclass(frozen=True)
 class BlobUploadOptions:
-    database_path: Path
+    database_path: DatabaseTarget
     input_dir: Path
     prefix: str = "saints/v1"
     slug: str | None = None
     limit: int | None = 1
     offset: int = 0
+    missing_only: bool = False
     node_script: Path = Path("tools/pipeline/bin/upload-vercel-blob.mjs")
     dry_run: bool = False
 
 
 def run_blob_upload(options: BlobUploadOptions) -> dict[str, int]:
-    rows = _select_saints(options)
     _ensure_columns(options.database_path, dry_run=options.dry_run)
+    rows = _select_saints(options)
+    log(f"Blob upload queue: {len(rows)} selected, prefix={options.prefix}, db={database_label(options.database_path)}")
 
     counts = {
         "selected": len(rows),
@@ -46,23 +50,25 @@ def run_blob_upload(options: BlobUploadOptions) -> dict[str, int]:
         "missing_assets": 0,
     }
 
-    for row in rows:
+    for index, row in enumerate(rows, start=1):
         slug = row["slug"]
         urls: dict[str, str] = {}
+        log(f"[{index}/{len(rows)}] Uploading assets for {slug}")
 
         for kind, (filename, content_type) in ASSETS.items():
             local_path = options.input_dir / slug / filename
             if not local_path.is_file():
                 counts["missing_assets"] += 1
-                print(f"Missing {local_path}")
+                log(f"Missing {local_path}")
                 continue
 
             pathname = _blob_path(options.prefix, slug, filename)
 
             if options.dry_run:
-                print(f"{slug}: {local_path} -> {pathname}")
+                log(f"{slug}: {local_path} -> {pathname}")
                 urls[kind] = f"https://example.vercel-storage.com/{pathname}"
             else:
+                log(f"[{index}/{len(rows)}] Uploading {kind}: {pathname}")
                 upload = _upload_file(options.node_script, local_path, pathname, content_type)
                 urls[kind] = upload["url"]
 
@@ -71,15 +77,12 @@ def run_blob_upload(options: BlobUploadOptions) -> dict[str, int]:
         if set(urls) == set(ASSETS):
             _update_saint_urls(options.database_path, slug, urls, dry_run=options.dry_run)
             counts["updated_rows"] += 1
-            print(f"Updated {slug}")
+            log(f"[{index}/{len(rows)}] Updated DB URLs for {slug}")
 
     return counts
 
 
 def _select_saints(options: BlobUploadOptions) -> list[dict[str, Any]]:
-    connection = sqlite3.connect(options.database_path)
-    connection.row_factory = sqlite3.Row
-
     where = []
     parameters: list[Any] = []
 
@@ -89,11 +92,19 @@ def _select_saints(options: BlobUploadOptions) -> list[dict[str, Any]]:
     else:
         slugs = _local_asset_slugs(options.input_dir)
         if not slugs:
-            connection.close()
             return []
         placeholders = ", ".join("?" for _ in slugs)
         where.append(f"slug in ({placeholders})")
         parameters.extend(slugs)
+
+    if options.missing_only:
+        where.append(
+            "("
+            "image_cutout_url is null or trim(image_cutout_url) = '' or "
+            "image_portrait_url is null or trim(image_portrait_url) = '' or "
+            "image_thumb_url is null or trim(image_thumb_url) = ''"
+            ")"
+        )
 
     sql = "select id, slug from saints"
     if where:
@@ -104,10 +115,7 @@ def _select_saints(options: BlobUploadOptions) -> list[dict[str, Any]]:
         sql += " limit ? offset ?"
         parameters.extend([options.limit, options.offset])
 
-    rows = [dict(row) for row in connection.execute(sql, parameters)]
-    connection.close()
-
-    return rows
+    return query_rows(options.database_path, sql, parameters)
 
 
 def _local_asset_slugs(input_dir: Path) -> list[str]:
@@ -121,22 +129,8 @@ def _local_asset_slugs(input_dir: Path) -> list[str]:
     )
 
 
-def _ensure_columns(database_path: Path, *, dry_run: bool) -> None:
-    connection = sqlite3.connect(database_path)
-    existing = {row[1] for row in connection.execute("pragma table_info(saints)")}
-
-    for column in URL_COLUMNS.values():
-        if column in existing:
-            continue
-        if dry_run:
-            print(f"Would add saints.{column}")
-            continue
-        connection.execute(f"alter table saints add column {column} varchar")
-
-    if not dry_run:
-        connection.commit()
-
-    connection.close()
+def _ensure_columns(database_path: DatabaseTarget, *, dry_run: bool) -> None:
+    ensure_sqlite_columns(database_path, URL_COLUMNS, dry_run=dry_run)
 
 
 def _upload_file(node_script: Path, local_path: Path, pathname: str, content_type: str) -> dict[str, Any]:
@@ -160,12 +154,12 @@ def _upload_file(node_script: Path, local_path: Path, pathname: str, content_typ
     return json.loads(result.stdout)
 
 
-def _update_saint_urls(database_path: Path, slug: str, urls: dict[str, str], *, dry_run: bool) -> None:
+def _update_saint_urls(database_path: DatabaseTarget, slug: str, urls: dict[str, str], *, dry_run: bool) -> None:
     if dry_run:
         return
 
-    connection = sqlite3.connect(database_path)
-    connection.execute(
+    execute(
+        database_path,
         """
         update saints
         set image_cutout_url = ?,
@@ -176,8 +170,6 @@ def _update_saint_urls(database_path: Path, slug: str, urls: dict[str, str], *, 
         """,
         (urls["cutout"], urls["portrait"], urls["thumb"], slug),
     )
-    connection.commit()
-    connection.close()
 
 
 def _blob_path(prefix: str, slug: str, filename: str) -> str:

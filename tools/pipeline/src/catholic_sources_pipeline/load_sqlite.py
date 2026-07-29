@@ -14,7 +14,7 @@ def load_db_ready_json(input_path: Path, database_path: Path, chunk_size: int = 
     if not isinstance(payload, dict) or not isinstance(payload.get("tables"), dict):
         raise ValueError("Input JSON must contain a tables object")
 
-    tables = payload["tables"]
+    tables = _source_tables(input_path, payload)
     sources = _rows(tables, "sources")
     source_documents = _rows(tables, "source_documents")
     citations = _rows(tables, "citations")
@@ -143,6 +143,30 @@ def _rows(tables: dict[str, Any], key: str) -> list[dict[str, Any]]:
         raise ValueError(f"Input JSON tables.{key} must be an array")
 
     return [row for row in rows if isinstance(row, dict)]
+
+
+def _source_tables(input_path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    tables = payload["tables"]
+
+    if not isinstance(tables, dict):
+        raise ValueError("Input JSON tables must be an object")
+
+    if all(isinstance(tables.get(key), list) for key in ["sources", "source_documents", "citations"]):
+        return tables
+
+    resolved: dict[str, Any] = {}
+
+    for key in ["sources", "source_documents", "citations"]:
+        manifest_entry = tables.get(key)
+
+        if not isinstance(manifest_entry, dict) or not isinstance(manifest_entry.get("path"), str):
+            continue
+
+        table_path = input_path.parent / manifest_entry["path"]
+        table_payload = json.loads(table_path.read_text(encoding="utf-8"))
+        resolved[key] = table_payload.get("rows")
+
+    return resolved
 
 
 def _upsert_sources(connection: sqlite3.Connection, rows: list[dict[str, Any]], now: str) -> None:

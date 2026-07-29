@@ -67,7 +67,7 @@ The review step does not send the full biography. It sends identifying fields pl
 
 ## Image Generation
 
-Generated saint portraits are local-first for now. The command reads `image_prompt` values from the SQLite `saints` table and writes one folder per saint. It skips existing `original.png` files unless `--force` is passed.
+Generated saint portraits are local-first for files and app-DB-first for data. The command reads `image_prompt` values from the configured app database and writes one folder per saint. It skips existing `original.png` files unless `--force` is passed.
 
 Each generated saint folder contains:
 
@@ -91,7 +91,7 @@ OPENAI_API_KEY=... PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pip
 That writes `storage/app/generated/openai-style-context.json` with reusable `file_id` values. Then generate with the Responses API image generation tool:
 
 ```bash
-OPENAI_API_KEY=... PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline generate-images database/database.sqlite storage/app/generated/saints --style-context storage/app/generated/openai-style-context.json --limit 1
+OPENAI_API_KEY=... PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline generate-images storage/app/generated/saints --style-context storage/app/generated/openai-style-context.json --limit 1
 ```
 
 This still includes the references as visual context for each generation, so they may still count as image input tokens, but it avoids repeatedly uploading the same PNG files.
@@ -99,13 +99,13 @@ This still includes the references as visual context for each generation, so the
 Dry-run the first few candidates from the repository root:
 
 ```bash
-PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline generate-images database/database.sqlite storage/app/generated/saints --dry-run --limit 5
+PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline generate-images storage/app/generated/saints --dry-run --limit 5
 ```
 
 Generate one trial image:
 
 ```bash
-OPENAI_API_KEY=... PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline generate-images database/database.sqlite storage/app/generated/saints --style-context storage/app/generated/openai-style-context.json --limit 1
+OPENAI_API_KEY=... PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline generate-images storage/app/generated/saints --style-context storage/app/generated/openai-style-context.json --limit 1
 ```
 
 After each image generation, the pipeline asks the model to inspect the generated portrait and store:
@@ -120,7 +120,13 @@ The recommendation chooses from Ambry's 17 page variants: `classic-gold`, `celti
 The default image model is `gpt-image-2`, with `800x1008` PNG output and `high` quality. GPT Image 2 requires image dimensions to be divisible by 16, so this keeps the master near 1000px tall with a wider full-body figure while keeping the app-facing `portrait.webp` derivative at `1200px` tall with automatic width. GPT Image 2 does not support native transparent backgrounds, so generated masters use a plain removable light background and should go through a later background-removal step before final upload. The default WebP settings are `--portrait-webp-quality 86`, `--thumb-height 474`, and `--thumb-webp-quality 80`. To generate the full set, pass `--all` explicitly:
 
 ```bash
-OPENAI_API_KEY=... PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline generate-images database/database.sqlite storage/app/generated/saints --style-context storage/app/generated/openai-style-context.json --all
+OPENAI_API_KEY=... PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline generate-images storage/app/generated/saints --style-context storage/app/generated/openai-style-context.json --all
+```
+
+Start with saints that have patronage links:
+
+```bash
+OPENAI_API_KEY=... PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline generate-images storage/app/generated/saints --style-context storage/app/generated/openai-style-context.json --has-patronages --canonical-status saint --limit 10
 ```
 
 ## Background Removal
@@ -159,17 +165,33 @@ Process every generated saint explicitly with `--all`.
 
 ### Upload transparent portraits to Vercel Blob
 
-After background removal, upload the transparent assets to public Vercel Blob storage and write the public URLs back to the SQLite `saints` table:
+After background removal, upload the transparent assets to public Vercel Blob storage and write the public URLs back to the app database:
 
 ```bash
-BLOB_READ_WRITE_TOKEN=... PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline upload-saint-blobs database/database.sqlite storage/app/generated/background-removed/saints --all
+BLOB_READ_WRITE_TOKEN=... PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline upload-saint-blobs storage/app/generated/background-removed/saints --all
 ```
 
 This uploads `cutout.png`, `portrait.webp`, and `thumb.webp` under stable public paths like `saints/v1/st-francis-of-assisi/portrait.webp`. Without `--slug`, the command selects saints that have complete transparent asset folders locally. Re-running the command overwrites the same Blob paths and updates `image_cutout_url`, `image_portrait_url`, and `image_thumb_url`.
 
+Use `--missing-only` to upload only complete local transparent asset folders whose DB URL columns have not been filled yet:
+
+```bash
+BLOB_READ_WRITE_TOKEN=... PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline upload-saint-blobs storage/app/generated/background-removed/saints --all --missing-only
+```
+
+### Interactive image console
+
+Run the image console to preview/generate the next saint batch, remove backgrounds for every local generated original, upload missing processed assets, and write image URLs into the app database:
+
+```bash
+PYTHONPATH=tools/pipeline/src python3 -m catholic_sources_pipeline image-console
+```
+
+The full-pipeline option generates the next 10 saint rows with patronages, processes all local originals missing transparent assets, and uploads complete processed folders missing Blob URLs directly into the app database.
+
 Keep generated files out of Git. Later, this local directory can become the source for a Blob/object-storage upload step.
 
-### Move the local SQLite DB to Neon/Postgres
+### Legacy SQLite to Neon/Postgres Import
 
 Set the Neon pooled or direct connection string locally:
 

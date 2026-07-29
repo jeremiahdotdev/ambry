@@ -3,10 +3,14 @@ pyproject.toml
 src/catholic_sources_pipeline/__init__.py
 src/catholic_sources_pipeline/__main__.py
 src/catholic_sources_pipeline/ai_enrichment.py
+src/catholic_sources_pipeline/blob_upload.py
 src/catholic_sources_pipeline/cli.py
+src/catholic_sources_pipeline/console_app.py
+src/catholic_sources_pipeline/database.py
 src/catholic_sources_pipeline/db_ready.py
 src/catholic_sources_pipeline/images.py
 src/catholic_sources_pipeline/load_sqlite.py
+src/catholic_sources_pipeline/logging.py
 src/catholic_sources_pipeline/new_advent.py
 src/catholic_sources_pipeline/text.py
 src/catholic_sources_pipeline.egg-info/PKG-INFO

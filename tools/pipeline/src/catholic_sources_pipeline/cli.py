@@ -5,10 +5,19 @@ from pathlib import Path
 
 from .ai_enrichment import AiEnrichmentOptions, run_ai_enrichment
 from .background_removal import BackgroundRemovalOptions, run_background_removal
+from .biography_formatting import BiographyFormattingOptions, run_biography_formatting
 from .blob_upload import BlobUploadOptions, run_blob_upload
 from .console_app import run_image_console
 from .db_ready import write_db_ready_payload
-from .images import ImageGenerationOptions, StyleContextOptions, prepare_style_context, run_image_generation
+from .images import (
+    ImageBatchOptions,
+    ImageGenerationOptions,
+    StyleContextOptions,
+    import_image_batch,
+    prepare_style_context,
+    run_image_generation,
+    submit_image_batch,
+)
 from .load_sqlite import load_db_ready_json, load_saints_json
 from .new_advent import write_new_advent_payload
 
@@ -82,6 +91,26 @@ def main() -> int:
     ai_enrich.add_argument("--offset", type=int, default=0)
     ai_enrich.add_argument("--batch-size", type=int, default=10)
     ai_enrich.add_argument("--dry-run", action="store_true")
+
+    format_biographies = subparsers.add_parser(
+        "format-biographies",
+        help="Use OpenAI to split saint biographies into headed sections with source markers.",
+    )
+    format_biographies.add_argument("--database", default="app")
+    format_biographies.add_argument("--model", default="gpt-4.1-mini")
+    format_biographies.add_argument("--limit", type=int, default=1)
+    format_biographies.add_argument("--offset", type=int, default=0)
+    format_biographies.add_argument("--slug", default=None)
+    format_biographies.add_argument("--canonical-status", default=None)
+    format_biographies.add_argument("--force", action="store_true")
+    format_biographies.add_argument("--all", action="store_true")
+    format_biographies.add_argument(
+        "--max-input-chars",
+        type=int,
+        default=None,
+        help="Optional guardrail. By default the full biography is sent.",
+    )
+    format_biographies.add_argument("--dry-run", action="store_true")
 
     style_context = subparsers.add_parser(
         "prepare-image-style-context",
@@ -177,6 +206,44 @@ def main() -> int:
     )
     generate_images.add_argument("--force", action="store_true", help="Regenerate existing image files.")
     generate_images.add_argument("--dry-run", action="store_true")
+
+    submit_image_batch_parser = subparsers.add_parser(
+        "submit-image-batch",
+        help="Submit a discounted OpenAI Batch API job for saint portraits.",
+    )
+    submit_image_batch_parser.add_argument("--database", default="app")
+    submit_image_batch_parser.add_argument("--output", type=Path, default=Path("storage/app/generated/saints"))
+    submit_image_batch_parser.add_argument(
+        "--manifest",
+        type=Path,
+        default=Path("storage/app/generated/image-batches/latest.json"),
+    )
+    submit_image_batch_parser.add_argument("--model", default="gpt-image-2")
+    submit_image_batch_parser.add_argument("--response-model", default="gpt-4.1")
+    submit_image_batch_parser.add_argument("--size", default="800x1008")
+    submit_image_batch_parser.add_argument("--quality", default="high")
+    submit_image_batch_parser.add_argument("--background", default="auto")
+    submit_image_batch_parser.add_argument("--limit", type=int, default=10)
+    submit_image_batch_parser.add_argument("--offset", type=int, default=0)
+    submit_image_batch_parser.add_argument("--slug", default=None)
+    submit_image_batch_parser.add_argument("--canonical-status", default=None)
+    submit_image_batch_parser.add_argument("--has-patronages", action="store_true")
+    submit_image_batch_parser.add_argument("--force", action="store_true")
+    submit_image_batch_parser.add_argument("--all", action="store_true")
+    submit_image_batch_parser.add_argument(
+        "--style-context",
+        type=Path,
+        default=Path("storage/app/generated/openai-style-context.json"),
+    )
+    submit_image_batch_parser.add_argument("--completion-window", default="24h")
+    submit_image_batch_parser.add_argument("--dry-run", action="store_true")
+
+    import_image_batch_parser = subparsers.add_parser(
+        "import-image-batch",
+        help="Import completed OpenAI Batch API saint portrait results.",
+    )
+    import_image_batch_parser.add_argument("manifest", type=Path)
+    import_image_batch_parser.add_argument("--dry-run", action="store_true")
 
     remove_backgrounds = subparsers.add_parser(
         "remove-image-backgrounds",
@@ -331,6 +398,29 @@ def main() -> int:
 
         return 0
 
+    if args.command == "format-biographies":
+        counts = run_biography_formatting(
+            BiographyFormattingOptions(
+                database_path=args.database,
+                model=args.model,
+                limit=None if args.all else args.limit,
+                offset=args.offset,
+                slug=args.slug,
+                canonical_status=args.canonical_status,
+                force=args.force,
+                dry_run=args.dry_run,
+                max_input_chars=args.max_input_chars,
+            )
+        )
+        print(
+            "Biography formatting selected "
+            f"{counts['selected']} rows, "
+            f"formatted {counts['formatted']}, "
+            f"failed {counts['failed']}"
+        )
+
+        return 0
+
     if args.command == "prepare-image-style-context":
         style_references = tuple(args.style_reference) if args.style_reference else (
             Path("storage/app/generated/style-references/assisi-final-small.png"),
@@ -390,6 +480,48 @@ def main() -> int:
             f"{counts['selected']} rows, "
             f"skipped {counts['skipped']}, "
             f"generated {counts['generated']}"
+        )
+
+        return 0
+
+    if args.command == "submit-image-batch":
+        counts = submit_image_batch(
+            ImageBatchOptions(
+                database_path=args.database,
+                output_dir=args.output,
+                manifest_path=args.manifest,
+                model=args.model,
+                response_model=args.response_model,
+                size=args.size,
+                quality=args.quality,
+                background=args.background,
+                limit=None if args.all else args.limit,
+                offset=args.offset,
+                slug=args.slug,
+                canonical_status=args.canonical_status,
+                has_patronages=args.has_patronages,
+                force=args.force,
+                dry_run=args.dry_run,
+                style_context_path=args.style_context,
+                completion_window=args.completion_window,
+            )
+        )
+        print(
+            "Image batch selected "
+            f"{counts['selected']} rows, "
+            f"skipped {counts['skipped']}, "
+            f"batch {counts['batch_id']}"
+        )
+
+        return 0
+
+    if args.command == "import-image-batch":
+        counts = import_image_batch(args.manifest, dry_run=args.dry_run)
+        print(
+            "Image batch import "
+            f"{counts['batch_id']} status={counts['status']}, "
+            f"imported {counts['imported']}, "
+            f"failed {counts['failed']}"
         )
 
         return 0

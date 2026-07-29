@@ -21,7 +21,9 @@
 
     <span class="saint-divider"></span>
 
-    @if ($saint->displayBiography())
+    @if (! empty($saint->biography_sections))
+        @include('saints.biography-sections', ['saint' => $saint])
+    @elseif ($saint->displayBiography())
         <div class="saint-intro">
             @foreach ($saint->displayBiographyParagraphs() as $paragraph)
                 <p>{{ $paragraph }}</p>

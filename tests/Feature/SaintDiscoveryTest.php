@@ -17,8 +17,8 @@ class SaintDiscoveryTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Ambry')
-            ->assertSee('Search by name, virtue, or patronage')
-            ->assertSee('Search by name, virtue, or patronage...')
+            ->assertSee('Search...')
+            ->assertSee('Popular Filters')
             ->assertDontSee('Church Father')
             ->assertDontSee('Church Fathers');
     }
@@ -105,7 +105,7 @@ class SaintDiscoveryTest extends TestCase
             ->assertDontSee('Saint Augustine');
     }
 
-    public function test_popular_search_links_filter_saint_results(): void
+    public function test_popular_filters_render_on_the_first_page_and_filter_searches(): void
     {
         $patron = Saint::create([
             'primary_name' => 'Saint Patron Example',
@@ -146,35 +146,52 @@ class SaintDiscoveryTest extends TestCase
             'canonical_status' => 'saint',
         ]);
 
+        $this->get('/?popular=patron_saints')
+            ->assertOk()
+            ->assertSee('Popular Filters')
+            ->assertSee('aria-pressed="true"', false)
+            ->assertSee('Patron Saints')
+            ->assertDontSee('Patron Example');
+
         $this->get('/search?type=saint&popular=patron_saints')
             ->assertOk()
-            ->assertSee('Patron Saints')
-            ->assertSee('popular=patron_saints', false)
+            ->assertSee('Popular Filters')
             ->assertSee('Patron Example')
             ->assertDontSee('Saint Unfiltered Example');
 
-        $this->get('/search?type=saint&popular=patrons')
+        $this->get('/search?type=saint')
             ->assertOk()
-            ->assertSee('Patron Saints')
+            ->assertSee('showing all saints')
+            ->assertSee('Patron Example')
+            ->assertSee('Unfiltered Example');
+
+        $this->get('/search?q=Example&type=saint&popular=patron_saints')
+            ->assertOk()
             ->assertSee('Patron Example')
             ->assertDontSee('Saint Unfiltered Example');
 
-        $this->get('/search?type=saint&popular=martyrs')
+        $this->get('/search?q=Example&type=saint&popular=patrons')
             ->assertOk()
+            ->assertSee('Patron Example')
+            ->assertDontSee('Saint Unfiltered Example');
+
+        $this->get('/search?q=Example&type=saint&popular=martyrs')
+            ->assertOk()
+            ->assertSee('Popular Filters')
             ->assertSee('Martyr Example')
             ->assertDontSee('Saint Unfiltered Example');
 
-        $this->get('/search?type=saint&popular=men')
+        $this->get('/search?q=Example&type=saint&popular=men')
             ->assertOk()
             ->assertSee('Patron Example')
             ->assertDontSee('Woman Example');
 
-        $this->get('/search?type=saint&popular=women')
+        $this->get('/search?q=Example&type=saint&popular=women')
             ->assertOk()
             ->assertSee('Woman Example')
             ->assertDontSee('Patron Example');
 
-        $this->get('/search?type=saint&popular=doctors')
+        $this->get('/search?q=Example&type=saint&popular=doctors')
             ->assertOk()
             ->assertSee('Doctor Example')
             ->assertDontSee('Saint Unfiltered Example');

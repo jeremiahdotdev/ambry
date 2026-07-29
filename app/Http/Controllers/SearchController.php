@@ -67,19 +67,6 @@ class SearchController extends Controller
         $selectedType = $this->selectedType($request);
         $selectedPopularSearch = $this->selectedPopularSearch($request);
 
-        if ($query === '' && $selectedPopularSearch === null) {
-            return view('search.index', [
-                'query' => $query,
-                'results' => [],
-                'searched' => false,
-                'error' => 'Enter a search term.',
-                'selectedType' => $selectedType,
-                'searchTypes' => self::SEARCH_TYPES,
-                'popularSearches' => self::POPULAR_SEARCHES,
-                'selectedPopularSearch' => $selectedPopularSearch,
-            ]);
-        }
-
         return view('search.index', [
             'query' => $query,
             'results' => $this->saintSearch

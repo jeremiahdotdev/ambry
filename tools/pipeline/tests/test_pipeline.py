@@ -7,11 +7,19 @@ import uuid
 from pathlib import Path
 
 from catholic_sources_pipeline.background_removal import BackgroundRemovalOptions, run_background_removal
+from catholic_sources_pipeline.biography_formatting import (
+    BiographyFormattingOptions,
+    _sections_from_ranges,
+    _source_catalog,
+    run_biography_formatting,
+)
 from catholic_sources_pipeline.blob_upload import BlobUploadOptions, run_blob_upload
 from catholic_sources_pipeline.db_ready import build_db_ready_payload, write_db_ready_payload
 from catholic_sources_pipeline.images import (
+    ImageBatchOptions,
     ImageGenerationOptions,
     StyleContextOptions,
+    _batch_request,
     _metadata,
     _update_saint_design_recommendation,
     build_portrait_prompt,
@@ -20,7 +28,7 @@ from catholic_sources_pipeline.images import (
     run_image_generation,
 )
 from catholic_sources_pipeline.load_sqlite import load_db_ready_json, load_saints_json
-from catholic_sources_pipeline.new_advent import build_new_advent_payload
+from catholic_sources_pipeline.new_advent import build_new_advent_payload, parse_new_advent_sections
 
 
 class PipelineSmokeTest(unittest.TestCase):
@@ -494,6 +502,138 @@ class PipelineSmokeTest(unittest.TestCase):
         json.dumps(metadata)
         self.assertEqual(str(saint_id), metadata["saint_id"])
 
+    def test_image_batch_request_uses_responses_image_generation_tool(self) -> None:
+        request = _batch_request(
+            {
+                "primary_name": "St. Sample",
+                "slug": "st-sample",
+                "life_dates": None,
+                "gender": None,
+                "canonical_status": "saint",
+                "image_prompt": "Devotional portrait.",
+            },
+            ImageBatchOptions(
+                database_path=Path("database.sqlite"),
+                output_dir=Path("unused"),
+                manifest_path=Path("batch.json"),
+            ),
+            {
+                "references": [
+                    {
+                        "file_id": "file_reference",
+                        "path": "reference.png",
+                    }
+                ]
+            },
+        )
+
+        self.assertEqual("st-sample", request["custom_id"])
+        self.assertEqual("/v1/responses", request["url"])
+        self.assertEqual("image_generation", request["body"]["tools"][0]["type"])
+        self.assertEqual("file_reference", request["body"]["input"][0]["content"][1]["file_id"])
+
+    def test_biography_formatting_dry_run_selects_unformatted_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            db_path = workspace / "database.sqlite"
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.executescript(
+                """
+                create table saints (
+                    id text primary key,
+                    primary_name text not null,
+                    slug text not null,
+                    biography text,
+                    canonical_status text,
+                    life_dates text,
+                    biography_sections text,
+                    biography_sources text,
+                    biography_format_error text
+                );
+                insert into saints (
+                    id, primary_name, slug, biography, canonical_status, life_dates,
+                    biography_sections, biography_sources, biography_format_error
+                ) values
+                    ('1', 'St. Sample', 'st-sample', 'First paragraph.', 'saint', null, null, null, null),
+                    ('2', 'St. Done', 'st-done', 'Already done.', 'saint', null, '[{}]', '[]', null);
+                """
+            )
+            connection.close()
+
+            counts = run_biography_formatting(
+                BiographyFormattingOptions(
+                    database_path=db_path,
+                    dry_run=True,
+                    limit=10,
+                )
+            )
+
+        self.assertEqual(1, counts["selected"])
+        self.assertEqual(0, counts["formatted"])
+        self.assertEqual(0, counts["failed"])
+
+    def test_biography_source_catalog_matches_exact_source_document(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            db_path = workspace / "database.sqlite"
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.executescript(
+                """
+                create table source_documents (
+                    id text primary key,
+                    title text not null,
+                    slug text,
+                    url text,
+                    raw_text text
+                );
+                insert into source_documents (id, title, slug, url, raw_text) values
+                    ('1', 'St. Sample.', 'cathen-00001a', 'http: //www.newadvent.org/cathen/00001a.htm', 'Exact biography.');
+                """
+            )
+            connection.close()
+
+            sources = _source_catalog(
+                db_path,
+                {
+                    "primary_name": "St. Sample",
+                    "biography": "Exact biography.",
+                },
+            )
+
+        self.assertEqual(
+            [
+                {
+                    "marker": "source:1",
+                    "title": "St. Sample.",
+                    "locator": "cathen-00001a",
+                    "url": "http://www.newadvent.org/cathen/00001a.htm",
+                }
+            ],
+            sources,
+        )
+
+    def test_biography_sections_preserve_original_paragraph_text(self) -> None:
+        sections = _sections_from_ranges(
+            [
+                {"heading": "Early Life", "start_paragraph": 1, "end_paragraph": 2},
+                {"heading": "Mission", "start_paragraph": 3, "end_paragraph": 3},
+            ],
+            [
+                "First original paragraph.",
+                "Second original paragraph with exact wording.",
+                "Third original paragraph.",
+            ],
+            "source:1",
+        )
+
+        self.assertEqual(
+            "First original paragraph.\n\nSecond original paragraph with exact wording.[source:1]",
+            sections[0]["body"],
+        )
+        self.assertEqual("Third original paragraph.[source:1]", sections[1]["body"])
+
     def test_new_advent_reader_converts_html_to_json_documents(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir)
@@ -524,9 +664,82 @@ class PipelineSmokeTest(unittest.TestCase):
         self.assertIn("source", payload)
         self.assertIn("documents", payload)
         self.assertIn("title", payload["documents"][0])
+        self.assertIn("pageSource", payload["documents"][0])
         self.assertIn("text", payload["documents"][0])
         self.assertIn("raw_html", payload["documents"][0])
         self.assertIn("relative_path", payload["documents"][0])
+        self.assertEqual("http://www.newadvent.org/cathen/01214a.htm", payload["documents"][0]["pageSource"]["url"])
+
+    def test_new_advent_sections_keep_bibliography_but_cite_page_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            cathen = workspace / "cathen"
+            cathen.mkdir()
+            article = cathen / "11554a.htm"
+            article.write_text(
+                """
+                <html>
+                  <head><title>CATHOLIC ENCYCLOPEDIA: St. Patrick</title></head>
+                  <body>
+                    <div id="springfield2">
+                      <h1>St. Patrick</h1>
+                      <p>Patrick preached in Ireland.</p>
+                      <h2>Writings of St. Patrick</h2>
+                      <p>The Confession is preserved.</p>
+                      <h2>Sources</h2>
+                      <p>Author, Source Book. Another, Later Study.</p>
+                      <div class="pub">
+                        <p id="apa"><span id="apaarticle">St. Patrick.</span>
+                        <span id="apaurl">http://www.newadvent.org/cathen/11554a.htm</span></p>
+                      </div>
+                    </div>
+                  </body>
+                </html>
+                """,
+                encoding="utf-8",
+            )
+
+            sections = parse_new_advent_sections(article)
+
+        self.assertEqual(None, sections[0]["heading"])
+        self.assertEqual("Writings of St. Patrick", sections[1]["heading"])
+        self.assertEqual("Sources", sections[2]["heading"])
+        self.assertIn("sources", sections[2])
+        self.assertNotIn("source_entries", sections[2])
+        self.assertEqual("http://www.newadvent.org/cathen/11554a.htm", sections[2]["pageSource"]["url"])
+
+    def test_new_advent_sections_add_page_source_when_bibliography_is_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            cathen = workspace / "cathen"
+            cathen.mkdir()
+            article = cathen / "01006f.htm"
+            article.write_text(
+                """
+                <html>
+                  <head><title>CATHOLIC ENCYCLOPEDIA: St. Abban</title></head>
+                  <body>
+                    <div id="springfield2">
+                      <h1>St. Abban</h1>
+                      <p>Abban founded a monastery.</p>
+                      <div class="pub">
+                        <p id="apa"><span id="apaarticle">St. Abban.</span>
+                        <span id="apaurl">http://www.newadvent.org/cathen/01006f.htm</span></p>
+                      </div>
+                    </div>
+                  </body>
+                </html>
+                """,
+                encoding="utf-8",
+            )
+
+            sections = parse_new_advent_sections(article)
+
+        self.assertEqual("About", sections[0].get("heading") or "About")
+        self.assertEqual("Sources", sections[1]["heading"])
+        self.assertEqual("sources", sections[1]["kind"])
+        self.assertEqual([], sections[1]["sources"])
+        self.assertEqual("http://www.newadvent.org/cathen/01006f.htm", sections[1]["pageSource"]["url"])
 
     def test_db_ready_layer_outputs_source_tables(self) -> None:
         payload = build_db_ready_payload(

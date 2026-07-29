@@ -41,24 +41,36 @@
             </a>
         </article>
     @empty
-        <p class="search-empty">No {{ strtolower($selectedPopularLabel ?? $selectedTypePlural) }} matched that search.</p>
+        <p class="search-empty">No {{ strtolower($selectedPopularLabel ?? $selectedTypePlural) }} matched.</p>
     @endforelse
 </section>
 
 @if (method_exists($results, 'hasPages') && $results->hasPages())
     <nav class="search-pagination" aria-label="Search results pagination">
         @if ($results->onFirstPage())
-            <span class="search-pagination-link is-disabled">Previous</span>
+            <span class="search-pagination-link is-disabled" aria-disabled="true">
+                <span aria-hidden="true">←</span>
+                <span>1</span>
+            </span>
         @else
-            <a class="search-pagination-link" href="{{ $results->previousPageUrl() }}" rel="prev">Previous</a>
+            <a class="search-pagination-link" href="{{ $results->previousPageUrl() }}" rel="prev" aria-label="Previous page, page {{ $results->currentPage() - 1 }}">
+                <span aria-hidden="true">←</span>
+                <span>{{ $results->currentPage() - 1 }}</span>
+            </a>
         @endif
 
         <span class="search-pagination-page is-current" aria-current="page">{{ $results->currentPage() }}</span>
 
         @if ($results->hasMorePages())
-            <a class="search-pagination-link" href="{{ $results->nextPageUrl() }}" rel="next">Next</a>
+            <a class="search-pagination-link" href="{{ $results->nextPageUrl() }}" rel="next" aria-label="Next page, page {{ $results->currentPage() + 1 }}">
+                <span>{{ $results->currentPage() + 1 }}</span>
+                <span aria-hidden="true">→</span>
+            </a>
         @else
-            <span class="search-pagination-link is-disabled">Next</span>
+            <span class="search-pagination-link is-disabled" aria-disabled="true">
+                <span>{{ $results->currentPage() }}</span>
+                <span aria-hidden="true">→</span>
+            </span>
         @endif
     </nav>
 @endif

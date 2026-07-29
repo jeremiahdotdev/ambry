@@ -15,7 +15,7 @@
 }
 
 .search-result-link {
-    height: 10rem;
+    height: 11rem;
     display: flex;
     gap: 1rem;
     overflow: hidden;
@@ -80,6 +80,7 @@
 .search-result-excerpt {
     position: relative;
     color: #6f5870;
+    padding-bottom: 0.25rem;
 }
 
 .search-result-excerpt-text {
@@ -132,10 +133,36 @@
     font-weight: 800;
     text-decoration: none;
     box-shadow: 0 0.35rem 0.9rem rgb(73 40 34 / 6%);
+    transition:
+        background-color 140ms ease,
+        border-color 140ms ease,
+        box-shadow 140ms ease,
+        color 140ms ease,
+        transform 140ms ease;
 }
 
 .search-pagination-link {
+    gap: 0.35rem;
     padding-inline: 0.8rem;
+}
+
+.search-pagination-link:not(.is-disabled):hover,
+.search-pagination-link:not(.is-disabled):focus-visible {
+    border-color: rgb(201 133 65 / 42%);
+    background: rgb(255 255 255 / 94%);
+    color: #4a183f;
+    box-shadow: 0 0.65rem 1.2rem rgb(73 40 34 / 10%);
+    transform: translateY(-1px);
+}
+
+.search-pagination-link:not(.is-disabled):active {
+    box-shadow: 0 0.28rem 0.55rem rgb(73 40 34 / 8%);
+    transform: translateY(1px) scale(0.97);
+}
+
+.search-pagination-link:focus-visible {
+    outline: 3px solid rgb(201 133 65 / 22%);
+    outline-offset: 3px;
 }
 
 .search-pagination-page.is-current {
@@ -146,4 +173,14 @@
 
 .search-pagination-link.is-disabled {
     opacity: 0.45;
+    box-shadow: none;
+}
+
+@media (min-width: 780px) {
+    .search-result-link {
+        height: 10rem;
+        display: flex;
+        gap: 1rem;
+        overflow: hidden;
+    }  
 }

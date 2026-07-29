@@ -35,6 +35,137 @@
     margin-block-start: 1em;
 }
 
+.saint-biography-section + .saint-biography-section {
+    margin-block-start: 1.35rem;
+}
+
+.saint-biography-section h2 {
+    margin: 0 0 0.38rem;
+    color: var(--saint-accent, #4e7b68);
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    font-size: 0.76rem;
+    font-weight: 850;
+    letter-spacing: 0.12em;
+    line-height: 1.35;
+    text-transform: uppercase;
+}
+
+.saint-biography-section:not(.saint-biography-section--sources) a {
+    color: inherit;
+    text-decoration: none;
+    pointer-events: none;
+    cursor: text;
+}
+
+.saint-biography-section--sources {
+    margin-block-start: 1.8rem;
+    padding-block-start: 1rem;
+    border-block-start: 1px solid color-mix(in srgb, var(--saint-border, var(--color-border)) 72%, transparent);
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    font-size: 0.78rem;
+    line-height: 1.55;
+}
+
+.saint-biography-section--sources h2 {
+    margin-block-end: 0.5rem;
+    font-size: 0.68rem;
+}
+
+.saint-biography-section--sources p {
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 74%, transparent);
+}
+
+.saint-source-document {
+    margin-block-start: 0.35rem;
+    padding-inline-start: 1rem;
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 74%, transparent);
+    font-weight: 500;
+}
+
+.saint-source-document a {
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 62%, transparent);
+    font-weight: 650;
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    text-decoration-color: color-mix(in srgb, currentColor 72%, transparent);
+}
+
+.saint-source-document span {
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+}
+
+.saint-source-ref {
+    position: relative;
+    display: inline-flex;
+    vertical-align: super;
+    margin-inline-start: 0.18rem;
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    line-height: 1;
+}
+
+.saint-source-ref > a {
+    display: inline-grid;
+    place-items: center;
+    min-inline-size: 1.1rem;
+    block-size: 1.1rem;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--saint-accent, #4e7b68) 35%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--saint-card, #f7f8ee) 90%, white);
+    color: var(--saint-accent, #4e7b68);
+    font-size: 0.62rem;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+}
+
+.saint-source-card {
+    position: absolute;
+    inset-block-end: calc(100% + 0.45rem);
+    inset-inline-start: 50%;
+    z-index: 4;
+    display: grid;
+    gap: 0.18rem;
+    inline-size: min(18rem, 72vw);
+    padding: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--saint-border, var(--color-border)) 86%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--saint-card, #f7f8ee) 94%, white);
+    box-shadow: 0 1rem 2.5rem rgb(32 37 45 / 16%);
+    color: var(--saint-text, var(--color-foreground));
+    font-size: 0.76rem;
+    line-height: 1.35;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 0.2rem);
+    transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.saint-source-ref:hover .saint-source-card,
+.saint-source-ref:focus-within .saint-source-card {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+}
+
+.saint-source-title {
+    font-weight: 800;
+}
+
+.saint-source-locator {
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 70%, transparent);
+    font-size: 0.7rem;
+}
+
+.saint-source-url {
+    overflow-wrap: anywhere;
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 72%, transparent);
+    font-size: 0.7rem;
+}
+
 .saint-patronages {
     margin-block-start: clamp(1.15rem, 2.6vh, 1.75rem);
     color: var(--saint-text, var(--color-foreground));

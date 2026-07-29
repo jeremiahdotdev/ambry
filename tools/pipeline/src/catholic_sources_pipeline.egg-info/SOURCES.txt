@@ -3,6 +3,7 @@ pyproject.toml
 src/catholic_sources_pipeline/__init__.py
 src/catholic_sources_pipeline/__main__.py
 src/catholic_sources_pipeline/ai_enrichment.py
+src/catholic_sources_pipeline/biography_formatting.py
 src/catholic_sources_pipeline/blob_upload.py
 src/catholic_sources_pipeline/cli.py
 src/catholic_sources_pipeline/console_app.py

@@ -53,7 +53,7 @@
                     <span>✧</span>
                     <span></span>
                 </div>
-                <p class="search-pretitle">Search...</p>
+                <p class="search-pretitle">Search by name, virtue, or patronage.</p>
             </header>
 
             <section class="search-shell" aria-label="Saint search">
@@ -73,27 +73,33 @@
                     <button type="submit" aria-label="Search">
                         <i data-lucide="arrow-right" aria-hidden="true"></i>
                     </button>
-                    @if ($selectedPopularSearch)
-                        <input type="hidden" name="popular" value="{{ $selectedPopularSearch }}">
-                    @endif
+                    <input
+                        type="hidden"
+                        name="popular"
+                        value="{{ $selectedPopularSearch ?? '' }}"
+                        data-popular-filter-input
+                        @if (! $selectedPopularSearch) disabled @endif
+                    >
                 </form>
 
                 @if ($popularSearches)
-                    <nav class="popular-searches" aria-label="Popular filters">
+                    <div class="popular-searches" aria-label="Popular filters" data-popular-filters>
                         <p>Popular Filters</p>
                         <div class="popular-search-list">
                             @foreach ($popularSearches as $popularKey => $popularSearch)
-                                <a
+                                <button
+                                    type="button"
                                     class="popular-search-link {{ $selectedPopularSearch === $popularKey ? 'is-active' : '' }}"
-                                    href="{{ route('search.results', ['q' => $query, 'type' => $selectedType, 'popular' => $popularKey]) }}"
-                                    aria-current="{{ $selectedPopularSearch === $popularKey ? 'true' : 'false' }}"
+                                    aria-pressed="{{ $selectedPopularSearch === $popularKey ? 'true' : 'false' }}"
+                                    data-popular-filter
+                                    data-value="{{ $popularKey }}"
                                 >
                                     <i data-lucide="{{ $popularSearch['icon'] }}" aria-hidden="true"></i>
                                     <span>{{ $popularSearch['label'] }}</span>
-                                </a>
+                                </button>
                             @endforeach
                         </div>
-                    </nav>
+                    </div>
                 @endif
 
                 @if ($error)
@@ -108,6 +114,8 @@
                             <span>for "{{ $query }}"</span>
                         @elseif ($selectedPopularLabel)
                             <span>for {{ $selectedPopularLabel }}</span>
+                        @else
+                            <span>showing all {{ strtolower($selectedTypePlural) }}</span>
                         @endif
                     </div>
 

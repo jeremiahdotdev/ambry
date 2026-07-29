@@ -27,16 +27,29 @@
     display: flex;
 }
 
-.saint-title-block h1 {
-    max-inline-size: 12ch;
+.saint-title {
+    max-inline-size: min(100%, 12ch);
     margin: 0.5rem 0 0;
     color: var(--saint-text, #143433);
     font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(3rem, 4vw + 1rem, 6.25rem);
+    font-size: 5.6rem;
     font-weight: 500;
     letter-spacing: 0;
     line-height: 0.95;
     text-transform: uppercase;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+}
+
+.saint-title--long {
+    max-inline-size: min(100%, 13ch);
+    font-size: 4.75rem;
+}
+
+.saint-title--compact {
+    max-inline-size: min(100%, 14ch);
+    font-size: 4rem;
 }
 
 .saint-divider {
@@ -55,10 +68,19 @@
         letter-spacing: 0;
     }
 
-    .saint-title-block h1 {
-        white-space: nowrap;
-        max-inline-size: 10.5ch;
-        font-size: clamp(2.65rem, 12vw, 5.25rem);
+    .saint-title {
+        max-inline-size: min(100%, 10.5ch);
+        font-size: 3.75rem;
+    }
+
+    .saint-title--long {
+        max-inline-size: min(100%, 12ch);
+        font-size: 3.2rem;
+    }
+
+    .saint-title--compact {
+        max-inline-size: min(100%, 13ch);
+        font-size: 2.65rem;
     }
 
     .saint-divider {

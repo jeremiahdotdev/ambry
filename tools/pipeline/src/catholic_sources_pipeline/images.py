@@ -12,7 +12,7 @@ from time import perf_counter
 from typing import Any
 from uuid import UUID
 
-from .database import DatabaseTarget, database_label, ensure_sqlite_columns, execute, json_param, query_rows
+from .database import DatabaseTarget, database_label, ensure_sqlite_columns, execute, json_param, load_dotenv, query_rows
 from .logging import log
 
 
@@ -75,6 +75,27 @@ class ImageGenerationOptions:
     dry_run: bool = False
     style_references: tuple[Path, ...] = DEFAULT_STYLE_REFERENCES
     style_context_path: Path | None = None
+
+
+@dataclass(frozen=True)
+class ImageBatchOptions:
+    database_path: DatabaseTarget
+    output_dir: Path
+    manifest_path: Path
+    model: str = "gpt-image-2"
+    response_model: str = "gpt-4.1"
+    size: str = "800x1008"
+    quality: str = "high"
+    background: str = "auto"
+    limit: int | None = 10
+    offset: int = 0
+    slug: str | None = None
+    canonical_status: str | None = None
+    has_patronages: bool = False
+    force: bool = False
+    dry_run: bool = False
+    style_context_path: Path = Path("storage/app/generated/openai-style-context.json")
+    completion_window: str = "24h"
 
 
 @dataclass(frozen=True)
@@ -312,6 +333,208 @@ def run_image_generation(options: ImageGenerationOptions) -> dict[str, int]:
     }
 
 
+def submit_image_batch(options: ImageBatchOptions) -> dict[str, int | str | None]:
+    selected, rows, missing = _select_missing_image_rows(options)
+    log(
+        "Image batch queue: "
+        f"{len(selected)} selected, {len(rows) - len(missing)} skipped existing, "
+        f"{len(missing)} missing total, db={database_label(options.database_path)}"
+    )
+
+    if options.dry_run:
+        for row in selected:
+            log(f"{row['slug']}: batch image request")
+
+        return {
+            "selected": len(selected),
+            "skipped": len(rows) - len(missing),
+            "batch_id": None,
+        }
+
+    if not selected:
+        return {
+            "selected": 0,
+            "skipped": len(rows) - len(missing),
+            "batch_id": None,
+        }
+
+    _ensure_api_key()
+
+    if not options.style_context_path.exists():
+        raise FileNotFoundError(
+            f"Style context not found: {options.style_context_path}. "
+            "Run prepare-image-style-context first."
+        )
+
+    from openai import OpenAI
+
+    client = OpenAI()
+    style_context = _read_style_context(options.style_context_path)
+    options.manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    jsonl_path = options.manifest_path.with_suffix(".jsonl")
+    rows_by_slug = {row["slug"]: row for row in selected}
+
+    jsonl_path.write_text(
+        "\n".join(
+            json.dumps(_batch_request(row, options, style_context), ensure_ascii=False)
+            for row in selected
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    log(f"Wrote batch JSONL: {jsonl_path}")
+
+    with jsonl_path.open("rb") as file:
+        uploaded = client.files.create(file=file, purpose="batch")
+
+    batch = client.batches.create(
+        input_file_id=uploaded.id,
+        endpoint="/v1/responses",
+        completion_window=options.completion_window,
+    )
+    manifest = {
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "batch_id": batch.id,
+        "input_file_id": uploaded.id,
+        "input_jsonl": str(jsonl_path),
+        "endpoint": "/v1/responses",
+        "completion_window": options.completion_window,
+        "status": getattr(batch, "status", None),
+        "output_dir": str(options.output_dir),
+        "style_context_path": str(options.style_context_path),
+        "style_context": style_context,
+        "options": _image_batch_options_metadata(options),
+        "rows": rows_by_slug,
+    }
+    options.manifest_path.write_text(
+        json.dumps(_jsonable(manifest), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    log(f"Submitted image batch {batch.id}; manifest: {options.manifest_path}")
+
+    return {
+        "selected": len(selected),
+        "skipped": len(rows) - len(missing),
+        "batch_id": batch.id,
+    }
+
+
+def import_image_batch(manifest_path: Path, *, dry_run: bool = False) -> dict[str, int | str | None]:
+    load_dotenv()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    batch_id = manifest["batch_id"]
+    _ensure_api_key()
+
+    from openai import OpenAI
+
+    client = OpenAI()
+    batch = client.batches.retrieve(batch_id)
+    status = getattr(batch, "status", None)
+    log(f"Image batch {batch_id} status: {status}")
+
+    if status != "completed":
+        manifest["status"] = status
+        manifest["last_checked_at"] = datetime.now(timezone.utc).isoformat()
+        manifest_path.write_text(json.dumps(_jsonable(manifest), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+        return {
+            "batch_id": batch_id,
+            "status": status,
+            "imported": 0,
+            "failed": 0,
+        }
+
+    output_file_id = getattr(batch, "output_file_id", None)
+
+    if not output_file_id:
+        raise RuntimeError(f"Completed batch {batch_id} has no output_file_id")
+
+    output_text = _download_file_text(client, output_file_id)
+    output_path = manifest_path.with_name(f"{manifest_path.stem}-output.jsonl")
+
+    if not dry_run:
+        output_path.write_text(output_text, encoding="utf-8")
+
+    rows = manifest["rows"]
+    options = _options_from_batch_manifest(manifest)
+    style_context = manifest.get("style_context")
+    imported = 0
+    failed = 0
+
+    for line in output_text.splitlines():
+        if not line.strip():
+            continue
+
+        item = json.loads(line)
+        slug = item.get("custom_id")
+        row = rows.get(slug)
+
+        if not row:
+            failed += 1
+            log(f"Skipping unknown batch result custom_id={slug}")
+            continue
+
+        error = item.get("error")
+
+        if error:
+            failed += 1
+            log(f"Batch result failed for {slug}: {error}")
+            continue
+
+        response_body = (item.get("response") or {}).get("body") or {}
+        image_base64 = _batch_response_image_base64(response_body)
+
+        if not image_base64:
+            failed += 1
+            log(f"Batch result for {slug} had no image payload")
+            continue
+
+        if dry_run:
+            log(f"Would import image for {slug}")
+            imported += 1
+            continue
+
+        image_path = _image_path(options.output_dir, slug)
+        metadata_path = _metadata_path(options.output_dir, slug)
+        image_path.parent.mkdir(parents=True, exist_ok=True)
+        image_path.write_bytes(base64.b64decode(image_base64))
+        derivatives = _write_webp_derivatives(image_path, options)
+        full_prompt = build_portrait_prompt(row, options.size)
+        metadata_path.write_text(
+            json.dumps(
+                _metadata(
+                    row,
+                    full_prompt,
+                    options,
+                    _batch_response_metadata(response_body),
+                    style_context,
+                    derivatives,
+                    None,
+                ),
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        imported += 1
+        log(f"Imported batch image for {slug}: {image_path}")
+
+    manifest["status"] = status
+    manifest["output_file_id"] = output_file_id
+    manifest["output_jsonl"] = str(output_path)
+    manifest["imported_at"] = datetime.now(timezone.utc).isoformat()
+    manifest["import_counts"] = {"imported": imported, "failed": failed}
+    manifest_path.write_text(json.dumps(_jsonable(manifest), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    return {
+        "batch_id": batch_id,
+        "status": status,
+        "imported": imported,
+        "failed": failed,
+    }
+
+
 def _update_saint_design_recommendation(
     database_path: DatabaseTarget,
     slug: str,
@@ -346,6 +569,150 @@ def _update_saint_design_recommendation(
         ),
     )
     log(f"Updated DB design recommendation for {slug}: {variant}")
+
+
+def _select_missing_image_rows(options: ImageGenerationOptions | ImageBatchOptions) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    selector_options = ImageGenerationOptions(
+        database_path=options.database_path,
+        output_dir=options.output_dir,
+        model=options.model,
+        response_model=options.response_model,
+        size=options.size,
+        quality=options.quality,
+        background=options.background,
+        limit=options.limit,
+        offset=options.offset,
+        slug=options.slug,
+        canonical_status=options.canonical_status,
+        has_patronages=options.has_patronages,
+        force=options.force,
+        dry_run=options.dry_run,
+    )
+
+    if not options.slug and not options.force and options.limit is not None:
+        selector_options = replace(selector_options, limit=None, offset=0)
+
+    rows = _select_saints(selector_options)
+    missing = [
+        row
+        for row in rows
+        if options.force or not _image_path(options.output_dir, row["slug"]).exists()
+    ]
+
+    if not options.slug and not options.force and options.limit is not None:
+        selected = missing[options.offset:options.offset + options.limit]
+    else:
+        selected = missing
+
+    return selected, rows, missing
+
+
+def _batch_request(row: dict[str, Any], options: ImageBatchOptions, style_context: dict[str, Any]) -> dict[str, Any]:
+    full_prompt = build_portrait_prompt(row, options.size)
+
+    return {
+        "custom_id": row["slug"],
+        "method": "POST",
+        "url": "/v1/responses",
+        "body": {
+            "model": options.response_model,
+            "input": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": full_prompt},
+                        *[
+                            {
+                                "type": "input_image",
+                                "file_id": reference["file_id"],
+                                "detail": "high",
+                            }
+                            for reference in style_context["references"]
+                        ],
+                    ],
+                }
+            ],
+            "tools": [
+                {
+                    "type": "image_generation",
+                    "model": options.model,
+                    "size": options.size,
+                    "quality": options.quality,
+                    "background": options.background,
+                    "output_format": "png",
+                    "action": "generate",
+                }
+            ],
+            "tool_choice": {"type": "image_generation"},
+        },
+    }
+
+
+def _image_batch_options_metadata(options: ImageBatchOptions) -> dict[str, Any]:
+    return {
+        "model": options.model,
+        "response_model": options.response_model,
+        "size": options.size,
+        "quality": options.quality,
+        "background": options.background,
+    }
+
+
+def _options_from_batch_manifest(manifest: dict[str, Any]) -> ImageGenerationOptions:
+    options = manifest.get("options") or {}
+
+    return ImageGenerationOptions(
+        database_path=None,
+        output_dir=Path(manifest["output_dir"]),
+        model=options.get("model", "gpt-image-2"),
+        response_model=options.get("response_model", "gpt-4.1"),
+        size=options.get("size", "800x1008"),
+        quality=options.get("quality", "high"),
+        background=options.get("background", "auto"),
+        style_context_path=Path(manifest["style_context_path"]) if manifest.get("style_context_path") else None,
+        design_analysis="none",
+    )
+
+
+def _download_file_text(client: Any, file_id: str) -> str:
+    content = client.files.content(file_id)
+
+    if hasattr(content, "text"):
+        return content.text
+
+    if hasattr(content, "read"):
+        data = content.read()
+        return data.decode("utf-8") if isinstance(data, bytes) else str(data)
+
+    return str(content)
+
+
+def _batch_response_image_base64(response_body: dict[str, Any]) -> str | None:
+    for output in response_body.get("output", []) or []:
+        if output.get("type") == "image_generation_call" and output.get("result"):
+            return output["result"]
+
+    return None
+
+
+def _batch_response_metadata(response_body: dict[str, Any]) -> dict[str, Any]:
+    image_output = next(
+        (
+            output
+            for output in response_body.get("output", []) or []
+            if output.get("type") == "image_generation_call"
+        ),
+        {},
+    )
+
+    return {
+        "revised_prompt": image_output.get("revised_prompt"),
+        "openai_created": response_body.get("created_at") or response_body.get("created"),
+        "response_id": response_body.get("id"),
+        "image_generation_call_id": image_output.get("id"),
+        "usage": _jsonable(response_body.get("usage")),
+        "batch": True,
+    }
 
 
 def _elapsed(started: float) -> str:
@@ -399,6 +766,8 @@ def build_portrait_prompt(row: dict[str, Any], size: str | None = None) -> str:
         "Keep the bottom half visually clean: below the waist, show only the robe/body crop and simple empty space. "
         "Do not place animals, plants, books, staffs, scrolls, buildings, landscapes, ground shadows, or other props/entities in the bottom half. "
         "Any saint symbols, animals, or props must be small and kept in the upper half near the shoulders, hands, or halo. "
+        "Avoid large props or decorative objects that consume significant horizontal or vertical canvas space, such as tables, desks, lecterns, oversized books, large crosses, floating decorative crosses, banners, columns, furniture, architectural fragments, or broad foreground objects. "
+        "Symbols should read as small hand-held or shoulder-level attributes, never as scene elements competing with the saint's silhouette. "
         "Let historically meaningful colors and symbols vary by saint, while preserving the collection style. "
         "Use a clear, harmonious color palette that can later map to one Ambry page variant. "
         "Do not include text, captions, watermarks, UI elements, extra people, modern objects, "

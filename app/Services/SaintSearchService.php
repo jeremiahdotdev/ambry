@@ -88,6 +88,11 @@ class SaintSearchService
             'primary_name',
             'slug',
             'biography',
+            'biography_sections',
+            'biography_sources',
+            'biography_format_model',
+            'biography_formatted_at',
+            'biography_format_error',
             'birth_year',
             'birth_year_qualifier',
             'death_year',
@@ -119,12 +124,23 @@ class SaintSearchService
     {
         match ($filter) {
             'patron_saints', 'patrons' => $builder->whereHas('patronages'),
-            'martyrs' => $builder->where('is_martyr', true),
+            'martyrs' => $this->whereBoolean($builder, 'is_martyr'),
             'men' => $builder->where('gender', 'male'),
             'women' => $builder->where('gender', 'female'),
-            'doctors' => $builder->where('is_doctor', true),
+            'doctors' => $this->whereBoolean($builder, 'is_doctor'),
             default => null,
         };
+    }
+
+    private function whereBoolean(Builder $builder, string $column): void
+    {
+        if ($builder->getConnection()->getDriverName() === 'pgsql') {
+            $builder->whereRaw($builder->getQuery()->getGrammar()->wrap($column).' is true');
+
+            return;
+        }
+
+        $builder->where($column, true);
     }
 
     private function jsonSearchColumn(string $column, string $driver): string

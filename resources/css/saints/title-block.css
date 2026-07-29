@@ -7,6 +7,7 @@
     margin-inline-end: 0.62em;
     color: var(--saint-accent, #4e7b68);
     line-height: 1;
+    font-size: 13px;
 }
 
 .saint-kicker,
@@ -50,14 +51,6 @@
 }
 
 @media (max-width: 780px) {
-    .saint-cross {
-        margin-inline-end: 0.7em;
-    }
-
-    .saint-kicker {
-        letter-spacing: 0.16em;
-    }
-
     .saint-subtitle {
         letter-spacing: 0;
     }

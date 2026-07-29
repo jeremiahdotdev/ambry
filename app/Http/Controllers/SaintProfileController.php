@@ -23,7 +23,8 @@ class SaintProfileController extends Controller
             },
             'variant' => match ($saint->slug) {
                 'st-patrick' => 'classic-gold',
-                default => GeneratedSaintImages::recommendedVariant($saint->slug)
+                default => $saint->image_page_variant
+                    ?? GeneratedSaintImages::recommendedVariant($saint->slug)
                     ?? SaintPageVariants::defaultForSlug($saint->slug),
             },
         ]);

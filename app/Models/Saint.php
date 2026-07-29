@@ -35,6 +35,10 @@ class Saint extends Model
         'image_cutout_url',
         'image_portrait_url',
         'image_thumb_url',
+        'image_page_variant',
+        'image_key_colors',
+        'image_variant_reason',
+        'image_variant_confidence',
     ];
 
     protected function casts(): array
@@ -48,6 +52,8 @@ class Saint extends Model
             'vices' => 'array',
             'roles' => 'array',
             'ai_confidence' => 'decimal:3',
+            'image_key_colors' => 'array',
+            'image_variant_confidence' => 'decimal:3',
         ];
     }
 

@@ -10,7 +10,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any
 
-from .database import DatabaseTarget, database_label, query_rows
+from .database import DatabaseTarget, database_label, execute, query_rows
 from .logging import log
 
 
@@ -28,7 +28,7 @@ PAGE_VARIANTS = {
     "martyr-crimson": "red, burgundy, rose-brown, martyrdom or sacrificial witness",
     "monastic-olive": "olive, muted green, brown, monastic habits, desert simplicity",
     "desert-rose": "terracotta, warm rose, sand, desert fathers and mothers",
-    "bishop-plum": "purple, plum, episcopal vestments, bishops and church authority",
+    "bishop-plum": "burgundy, maroon, deep wine red, episcopal vestments, bishops and church authority",
     "doctor-indigo": "indigo, scholarly blue, theological depth, doctors and writers",
     "virgin-ivory": "ivory, white, pale gold, purity, virgins and contemplatives",
     "mission-teal": "teal, sea-green, missionary travel, evangelists and founders",
@@ -275,6 +275,7 @@ def run_image_generation(options: ImageGenerationOptions) -> dict[str, int]:
             )
             log(f"[{index}/{len(selected)}] Design analysis returned for {row['slug']} in {_elapsed(analysis_started)}")
 
+        _update_saint_design_recommendation(options.database_path, row["slug"], design_recommendation)
         metadata_path.write_text(
             json.dumps(
                 _metadata(
@@ -300,6 +301,41 @@ def run_image_generation(options: ImageGenerationOptions) -> dict[str, int]:
         "skipped": len(rows) - len(missing),
         "generated": generated,
     }
+
+
+def _update_saint_design_recommendation(
+    database_path: DatabaseTarget,
+    slug: str,
+    design_recommendation: dict[str, Any] | None,
+) -> None:
+    if not design_recommendation:
+        return
+
+    variant = design_recommendation.get("recommended_page_variant")
+
+    if variant not in PAGE_VARIANTS:
+        return
+
+    execute(
+        database_path,
+        """
+        update saints
+        set image_page_variant = ?,
+            image_key_colors = ?,
+            image_variant_reason = ?,
+            image_variant_confidence = ?,
+            updated_at = current_timestamp
+        where slug = ?
+        """,
+        (
+            variant,
+            json.dumps(design_recommendation.get("key_colors") or [], ensure_ascii=False),
+            design_recommendation.get("variant_reason"),
+            design_recommendation.get("confidence"),
+            slug,
+        ),
+    )
+    log(f"Updated DB design recommendation for {slug}: {variant}")
 
 
 def _elapsed(started: float) -> str:

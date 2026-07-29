@@ -57,6 +57,10 @@ class SaintController extends Controller
             'image_cutout_url' => $saint->image_cutout_url,
             'image_portrait_url' => $saint->image_portrait_url,
             'image_thumb_url' => $saint->image_thumb_url,
+            'image_page_variant' => $saint->image_page_variant,
+            'image_key_colors' => $saint->image_key_colors,
+            'image_variant_reason' => $saint->image_variant_reason,
+            'image_variant_confidence' => $saint->image_variant_confidence,
             'aliases' => $saint->aliases->pluck('alias')->values(),
             'feast_days' => $saint->feastDays->map(fn ($feastDay): array => [
                 'month' => $feastDay->month,

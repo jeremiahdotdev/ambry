@@ -88,15 +88,15 @@ class SaintPageVariants
             ],
             'bishop-plum' => [
                 'scheme' => self::scheme(
-                    '#e2dbe7',
-                    '#f3eff5',
-                    '#fbfaf7',
-                    '#faf6ee',
-                    '#d4c8d8',
-                    '#2f2a35',
-                    '#76577f',
+                    '#ead6d2',
+                    '#f7ebe7',
+                    '#fff8ee',
+                    '#fff3df',
+                    '#dfc4b9',
+                    '#33211f',
+                    '#7f3438',
                 ),
-                'circles' => self::circles('plum'),
+                'circles' => self::circles('plum', true),
             ],
             'doctor-indigo' => [
                 'scheme' => self::scheme(
@@ -300,7 +300,7 @@ class SaintPageVariants
             'crimson' => ['#8d3933', '#eadbd8', '#665350', '#f8efec'],
             'olive' => ['#4f6844', '#dde5d1', '#7c9070', '#f1f5e9'],
             'rose' => ['#a75f4b', '#e8d8d1', '#7e655a', '#f6eee8'],
-            'plum' => ['#65436f', '#e2dbe7', '#8a7294', '#f3eff5'],
+            'plum' => ['#713238', '#ead6d2', '#b58236', '#fff1d7'],
             'indigo' => ['#344d75', '#dce2eb', '#7387a6', '#f0f3f7'],
             'ivory' => ['#b08b45', '#f6f2e9', '#c7ad72', '#fffaf0'],
             'teal' => ['#2f6f6d', '#d7e4e2', '#78a39e', '#edf4f1'],

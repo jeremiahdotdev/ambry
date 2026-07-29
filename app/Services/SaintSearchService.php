@@ -32,6 +32,7 @@ class SaintSearchService
         $vicesSearchColumn = $this->jsonSearchColumn('vices', $driver);
 
         $search = Saint::query()
+            ->select($this->resultColumns())
             ->with($with ?? ['aliases', 'feastDays', 'patronages', 'religiousOrders'])
             ->when($normalizedType !== '', fn (Builder $builder) => $builder->where('canonical_status', $normalizedType))
             ->when($normalizedPopular !== '', fn (Builder $builder) => $this->applyPopularFilter($builder, $normalizedPopular))
@@ -72,6 +73,46 @@ class SaintSearchService
         }
 
         return $search->limit(50)->get();
+    }
+
+    /**
+     * Keep search queries off `select *` so pooled Postgres connections do not
+     * reuse stale result plans after saint table migrations add columns.
+     *
+     * @return list<string>
+     */
+    private function resultColumns(): array
+    {
+        return [
+            'id',
+            'primary_name',
+            'slug',
+            'biography',
+            'birth_year',
+            'birth_year_qualifier',
+            'death_year',
+            'death_year_qualifier',
+            'life_dates',
+            'gender',
+            'canonical_status',
+            'is_martyr',
+            'is_doctor',
+            'virtues',
+            'vices',
+            'roles',
+            'ai_reason',
+            'ai_confidence',
+            'image_prompt',
+            'image_cutout_url',
+            'image_portrait_url',
+            'image_thumb_url',
+            'image_page_variant',
+            'image_key_colors',
+            'image_variant_reason',
+            'image_variant_confidence',
+            'created_at',
+            'updated_at',
+        ];
     }
 
     private function applyPopularFilter(Builder $builder, string $filter): void

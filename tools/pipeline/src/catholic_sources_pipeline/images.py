@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import base64
 from contextlib import ExitStack
+from decimal import Decimal
 import json
 import os
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+from uuid import UUID
 
 from .database import DatabaseTarget, database_label, ensure_sqlite_columns, execute, json_param, query_rows
 from .logging import log
@@ -487,7 +489,7 @@ def _metadata(
     derivatives: dict[str, dict[str, Any]],
     design_recommendation: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    return {
+    return _jsonable({
         "saint_id": row["id"],
         "slug": row["slug"],
         "primary_name": row["primary_name"],
@@ -507,7 +509,7 @@ def _metadata(
             for reference in style_context["references"]
         ] if style_context else [],
         **response_metadata,
-    }
+    })
 
 
 def _recommend_page_variant(
@@ -673,10 +675,16 @@ def _jsonable(value: Any) -> Any:
         return None
 
     if hasattr(value, "model_dump"):
-        return value.model_dump()
+        return _jsonable(value.model_dump())
+
+    if isinstance(value, (date, datetime, Decimal, UUID)):
+        return str(value)
+
+    if isinstance(value, list | tuple):
+        return [_jsonable(item) for item in value]
 
     if isinstance(value, dict):
-        return value
+        return {str(key): _jsonable(item) for key, item in value.items()}
 
     return str(value)
 

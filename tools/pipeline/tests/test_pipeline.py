@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+import uuid
 from pathlib import Path
 
 from catholic_sources_pipeline.background_removal import BackgroundRemovalOptions, run_background_removal
@@ -11,6 +12,7 @@ from catholic_sources_pipeline.db_ready import build_db_ready_payload, write_db_
 from catholic_sources_pipeline.images import (
     ImageGenerationOptions,
     StyleContextOptions,
+    _metadata,
     _update_saint_design_recommendation,
     build_portrait_prompt,
     PAGE_VARIANTS,
@@ -468,6 +470,29 @@ class PipelineSmokeTest(unittest.TestCase):
         )
         self.assertEqual("Burgundy episcopal vestments.", row["image_variant_reason"])
         self.assertAlmostEqual(0.97, float(row["image_variant_confidence"]))
+
+    def test_image_metadata_serializes_postgres_uuid_ids(self) -> None:
+        saint_id = uuid.uuid4()
+        metadata = _metadata(
+            {
+                "id": saint_id,
+                "slug": "st-sample",
+                "primary_name": "St. Sample",
+                "image_prompt": "Devotional portrait.",
+            },
+            "Full prompt.",
+            ImageGenerationOptions(
+                database_path=Path("database.sqlite"),
+                output_dir=Path("unused"),
+            ),
+            {"usage": {"input_tokens": 10}},
+            None,
+            {"original": {}, "portrait": {}, "thumb": {}},
+            None,
+        )
+
+        json.dumps(metadata)
+        self.assertEqual(str(saint_id), metadata["saint_id"])
 
     def test_new_advent_reader_converts_html_to_json_documents(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

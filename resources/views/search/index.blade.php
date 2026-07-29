@@ -53,12 +53,12 @@
                     <span>✧</span>
                     <span></span>
                 </div>
-                <p class="search-pretitle">Search by name, virtue, or patronage</p>
+                <p class="search-pretitle">Search...</p>
             </header>
 
             <section class="search-shell" aria-label="Saint search">
                 <form id="saint-search-form" action="{{ route('search.results') }}" method="GET" class="search-panel">
-                    <label for="q">Search {{ strtolower($selectedTypePlural) }}</label>
+                    <label for="q">Search...</label>
                     <div class="search-input-wrap">
                         <span class="search-icon" aria-hidden="true"></span>
                         <input
@@ -66,7 +66,7 @@
                             name="q"
                             type="search"
                             value="{{ $query }}"
-                            placeholder="Search by name, virtue, or patronage..."
+                            placeholder="Search..."
                             autofocus
                         >
                     </div>

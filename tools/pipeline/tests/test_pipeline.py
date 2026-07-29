@@ -11,6 +11,7 @@ from catholic_sources_pipeline.db_ready import build_db_ready_payload, write_db_
 from catholic_sources_pipeline.images import (
     ImageGenerationOptions,
     StyleContextOptions,
+    _update_saint_design_recommendation,
     build_portrait_prompt,
     PAGE_VARIANTS,
     prepare_style_context,
@@ -417,6 +418,56 @@ class PipelineSmokeTest(unittest.TestCase):
         self.assertIn("byzantine-jewel", PAGE_VARIANTS)
         self.assertIn("floral-rose", PAGE_VARIANTS)
         self.assertIn("sea-aqua", PAGE_VARIANTS)
+
+    def test_image_design_recommendation_updates_database_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            db_path = workspace / "database.sqlite"
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.executescript(
+                """
+                create table saints (
+                    id text primary key,
+                    slug text not null,
+                    updated_at text
+                );
+                insert into saints (id, slug, updated_at) values ('1', 'st-ambrose', null);
+                """
+            )
+            connection.close()
+
+            _update_saint_design_recommendation(
+                db_path,
+                "st-ambrose",
+                {
+                    "recommended_page_variant": "bishop-plum",
+                    "key_colors": [
+                        {"name": "Burgundy", "hex": "#713238", "role": "dominant"},
+                    ],
+                    "variant_reason": "Burgundy episcopal vestments.",
+                    "confidence": 0.97,
+                },
+            )
+
+            connection = __import__("sqlite3").connect(db_path)
+            connection.row_factory = __import__("sqlite3").Row
+            row = connection.execute(
+                """
+                select image_page_variant, image_key_colors, image_variant_reason, image_variant_confidence
+                from saints
+                where slug = 'st-ambrose'
+                """
+            ).fetchone()
+            connection.close()
+
+        self.assertEqual("bishop-plum", row["image_page_variant"])
+        self.assertEqual(
+            [{"name": "Burgundy", "hex": "#713238", "role": "dominant"}],
+            json.loads(row["image_key_colors"]),
+        )
+        self.assertEqual("Burgundy episcopal vestments.", row["image_variant_reason"])
+        self.assertAlmostEqual(0.97, float(row["image_variant_confidence"]))
 
     def test_new_advent_reader_converts_html_to_json_documents(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

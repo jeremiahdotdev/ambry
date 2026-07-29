@@ -10,7 +10,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any
 
-from .database import DatabaseTarget, database_label, execute, query_rows
+from .database import DatabaseTarget, database_label, ensure_sqlite_columns, execute, json_param, query_rows
 from .logging import log
 
 
@@ -39,6 +39,13 @@ PAGE_VARIANTS = {
     "byzantine-jewel": "deep blue, ruby, emerald, gold, Eastern icons, ancient jeweled sacred art",
     "floral-rose": "rose pink, blush, soft floral devotional imagery, saints associated with roses or gentle affection",
     "sea-aqua": "aqua, sea blue, pale teal, fishermen, seafarers, coastal patrons, water symbolism",
+}
+
+DESIGN_COLUMNS: dict[str, str] = {
+    "variant": "image_page_variant",
+    "colors": "image_key_colors",
+    "reason": "image_variant_reason",
+    "confidence": "image_variant_confidence",
 }
 
 
@@ -316,6 +323,7 @@ def _update_saint_design_recommendation(
     if variant not in PAGE_VARIANTS:
         return
 
+    ensure_sqlite_columns(database_path, DESIGN_COLUMNS, dry_run=False)
     execute(
         database_path,
         """
@@ -329,7 +337,7 @@ def _update_saint_design_recommendation(
         """,
         (
             variant,
-            json.dumps(design_recommendation.get("key_colors") or [], ensure_ascii=False),
+            json_param(database_path, design_recommendation.get("key_colors") or []),
             design_recommendation.get("variant_reason"),
             design_recommendation.get("confidence"),
             slug,

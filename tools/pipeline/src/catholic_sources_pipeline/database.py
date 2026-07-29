@@ -82,6 +82,23 @@ def execute(target: DatabaseTarget, sql: str, params: list[Any] | tuple[Any, ...
             return cursor.rowcount
 
 
+def json_param(target: DatabaseTarget, value: Any) -> Any:
+    if _is_sqlite_target(target):
+        import json
+
+        return json.dumps(value, ensure_ascii=False)
+
+    try:
+        from psycopg.types.json import Json
+    except ImportError as exc:
+        raise RuntimeError(
+            "psycopg is required for Postgres JSON pipeline writes. "
+            "Run `pip install -e tools/pipeline`."
+        ) from exc
+
+    return Json(value)
+
+
 def ensure_sqlite_columns(target: DatabaseTarget, columns: dict[str, str], *, dry_run: bool) -> None:
     if not _is_sqlite_target(target):
         return
@@ -140,7 +157,7 @@ def _postgres_connection() -> Iterator[Any]:
             "Run `pip install -e tools/pipeline`."
         ) from exc
 
-    with psycopg.connect(url) as connection:
+    with psycopg.connect(url, prepare_threshold=None) as connection:
         yield connection
 
 

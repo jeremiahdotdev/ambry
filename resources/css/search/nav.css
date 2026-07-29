@@ -97,18 +97,30 @@
 }
 
 .search-brand {
+    position: relative;
     gap: 0.75rem;
     color: inherit;
     font-family: Georgia, "Times New Roman", serif;
-    letter-spacing: 0.28em;
+    font-size: 1.25rem;
+    letter-spacing: 0.36em;
     text-decoration: none;
+    text-shadow:
+        0 0.08rem 0.18rem rgb(216 160 82 / 26%),
+        0 0 0.75rem rgb(216 160 82 / 18%);
     text-transform: uppercase;
 }
 
-.search-brand span:first-child {
+.search-brand::before,
+.search-brand::after {
+    content: "✣";
+    padding-right: 4px;
     color: #d8a052;
-    font-size: 1.8rem;
+    font-size: 0.78rem;
     letter-spacing: 0;
+    line-height: 1;
+    text-shadow:
+        0 0.08rem 0.18rem rgb(216 160 82 / 28%),
+        0 0 0.55rem rgb(216 160 82 / 20%);
 }
 
 @media (min-width: 781px) {

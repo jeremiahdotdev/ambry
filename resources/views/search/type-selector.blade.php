@@ -12,6 +12,7 @@
     <button
         class="search-type-selector-button"
         type="button"
+        aria-label="Search Filter: {{ $selectedLabel }}"
         aria-haspopup="listbox"
         aria-expanded="false"
         aria-controls="{{ $menuId }}"
@@ -21,7 +22,7 @@
         <span class="search-type-selector-arrow" aria-hidden="true"></span>
     </button>
 
-    <span class="search-type-selector-menu" id="{{ $menuId }}" role="listbox" data-search-type-menu hidden>
+    <span class="search-type-selector-menu" id="{{ $menuId }}" role="listbox" aria-label="Search Filter" data-search-type-menu hidden>
         @foreach ($types as $value => $label)
             <button
                 class="search-type-selector-option"

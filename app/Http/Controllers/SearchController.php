@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class SearchController extends Controller
 {
-    private const RESULTS_PER_PAGE = 20;
+    private const RESULTS_PER_PAGE = 10;
 
     private const SEARCH_TYPES = [
         'saint' => 'Saint',
@@ -67,7 +67,7 @@ class SearchController extends Controller
         $selectedType = $this->selectedType($request);
         $selectedPopularSearch = $this->selectedPopularSearch($request);
 
-        return view('search.index', [
+        return view('search.results-page', [
             'query' => $query,
             'results' => $this->saintSearch
                 ->search($query, type: $selectedType, popular: $selectedPopularSearch, perPage: self::RESULTS_PER_PAGE, with: ['patronages'])

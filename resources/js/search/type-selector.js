@@ -28,6 +28,7 @@ function mountTypeSelector(selector, closeHandlers) {
         option.addEventListener('click', () => {
             input.value = option.dataset.value || '';
             label.textContent = option.textContent.trim();
+            button.setAttribute('aria-label', `Search Filter: ${label.textContent}`);
 
             options.forEach((item) => item.setAttribute('aria-selected', item === option ? 'true' : 'false'));
             close();

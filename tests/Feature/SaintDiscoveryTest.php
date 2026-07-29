@@ -18,6 +18,7 @@ class SaintDiscoveryTest extends TestCase
             ->assertOk()
             ->assertSee('Ambry')
             ->assertSee('Search...')
+            ->assertSee('Search Filter')
             ->assertSee('Popular Filters')
             ->assertDontSee('Church Father')
             ->assertDontSee('Church Fathers');
@@ -53,6 +54,8 @@ class SaintDiscoveryTest extends TestCase
 
         $this->get('/search?q=patricius')
             ->assertOk()
+            ->assertSee('Back to search')
+            ->assertDontSee('Search...')
             ->assertSee('Patrick')
             ->assertSee('Ireland')
             ->assertSee(route('saints.profile', $patrick))
@@ -155,13 +158,15 @@ class SaintDiscoveryTest extends TestCase
 
         $this->get('/search?type=saint&popular=patron_saints')
             ->assertOk()
-            ->assertSee('Popular Filters')
+            ->assertSee('Back to search')
+            ->assertSee('Patron Saints')
             ->assertSee('Patron Example')
             ->assertDontSee('Saint Unfiltered Example');
 
         $this->get('/search?type=saint')
             ->assertOk()
-            ->assertSee('showing all saints')
+            ->assertSee('<p>Searching</p>', false)
+            ->assertSee('<h1>Saints</h1>', false)
             ->assertSee('Patron Example')
             ->assertSee('Unfiltered Example');
 
@@ -177,7 +182,7 @@ class SaintDiscoveryTest extends TestCase
 
         $this->get('/search?q=Example&type=saint&popular=martyrs')
             ->assertOk()
-            ->assertSee('Popular Filters')
+            ->assertSee('Martyrs')
             ->assertSee('Martyr Example')
             ->assertDontSee('Saint Unfiltered Example');
 
@@ -331,7 +336,7 @@ class SaintDiscoveryTest extends TestCase
             ->assertDontSee('Bl. Adrian Fortescue');
     }
 
-    public function test_search_results_are_paginated_twenty_at_a_time(): void
+    public function test_search_results_are_paginated_ten_at_a_time(): void
     {
         foreach (range(1, 21) as $index) {
             Saint::create([
@@ -343,15 +348,15 @@ class SaintDiscoveryTest extends TestCase
 
         $this->get('/search?q=Pagination&type=saint')
             ->assertOk()
-            ->assertSee('20 results')
+            ->assertSee('10+ results')
             ->assertSee('Pagination 01')
-            ->assertSee('Pagination 20')
-            ->assertDontSee('Pagination 21')
+            ->assertSee('Pagination 10')
+            ->assertDontSee('Pagination 11')
             ->assertSee('/search?q=Pagination&amp;type=saint&amp;page=2', false);
 
         $this->get('/search?q=Pagination&type=saint&page=2')
             ->assertOk()
-            ->assertSee('Pagination 21')
+            ->assertSee('Pagination 11')
             ->assertDontSee('Pagination 01');
     }
 

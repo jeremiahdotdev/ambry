@@ -14,10 +14,7 @@
     data-saint-variant="{{ $variant }}"
     style="--saint-page-start: {{ $scheme['pageStart'] }}; --saint-page-mid: {{ $scheme['pageMid'] }}; --saint-page-end: {{ $scheme['pageEnd'] }}; --saint-card: {{ $scheme['card'] }}; --saint-border: {{ $scheme['border'] }}; --saint-text: {{ $scheme['text'] }}; --saint-accent: {{ $scheme['accent'] }}; --saint-backdrop: {{ $scheme['backdrop'] }};"
 >
-    <a class="saint-backlink" href="javascript:history.back()">
-        <span aria-hidden="true">←</span>
-        <span>Back to search</span>
-    </a>
+    @include('shared.back-to-search', ['class' => 'saint-backlink'])
 
     @foreach ($layout['circles'] as $circle)
         @php

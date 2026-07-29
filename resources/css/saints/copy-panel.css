@@ -7,7 +7,6 @@
     align-self: flex-start;
     inline-size: 100%;
     margin-block-start: 52svh;
-    margin-inline-end: 1rem;
     padding: clamp(2rem, 7svh, 4rem) clamp(1.35rem, 7vw, 3rem) 2.5rem;
     border-top: 1px solid color-mix(in srgb, var(--saint-border, var(--color-border)) 74%, transparent);
     background:

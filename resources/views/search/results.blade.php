@@ -13,7 +13,9 @@
 
         <article class="search-result">
             <a class="search-result-link" href="{{ route('saints.profile', $saint) }}">
-                <img class="search-result-image" src="{{ $imageUrl }}" alt="">
+                <span class="search-result-image-wrapper">
+                    <img class="search-result-image" src="{{ $imageUrl }}" alt="">
+                </span>
                 <span class="search-result-content">
                     <span class="search-result-title">
                         <span>{{ $searchTypes[$saint->canonical_status] ?? ucfirst(str_replace('_', ' ', $saint->canonical_status)) }}</span>

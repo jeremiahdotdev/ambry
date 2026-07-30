@@ -223,6 +223,12 @@
     overflow: hidden;
 }
 
+.search-result-image-wrapper {
+    min-width: 9rem;
+    display: flex;
+    justify-content: center;
+}
+
 .search-result-image {
     height: 20rem;
     width: auto;
@@ -444,11 +450,6 @@
     .search-result-link {
         height: 9.4rem;
         gap: 0.75rem;
-    }
-
-    .search-result-image {
-        height: 16rem;
-        margin-inline-start: -0.35rem;
     }
 
     .search-result-title {

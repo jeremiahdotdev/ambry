@@ -277,9 +277,9 @@ def main() -> int:
         help="Legacy width-based thumbnail resize. Prefer --thumb-height.",
     )
     remove_backgrounds.add_argument("--thumb-webp-quality", type=int, default=80)
-    remove_backgrounds.add_argument("--tolerance", type=int, default=10)
-    remove_backgrounds.add_argument("--transition", type=int, default=52)
-    remove_backgrounds.add_argument("--feather-radius", type=float, default=0.4)
+    remove_backgrounds.add_argument("--tolerance", type=int, default=40)
+    remove_backgrounds.add_argument("--transition", type=int, default=1)
+    remove_backgrounds.add_argument("--feather-radius", type=float, default=0.0)
     remove_backgrounds.add_argument(
         "--no-horizontal-trim",
         action="store_true",
@@ -288,6 +288,8 @@ def main() -> int:
     remove_backgrounds.add_argument("--trim-padding-ratio", type=float, default=0.015)
     remove_backgrounds.add_argument("--trim-min-width-ratio", type=float, default=0.0)
     remove_backgrounds.add_argument("--trim-alpha-threshold", type=int, default=8)
+    remove_backgrounds.add_argument("--trim-min-alpha-pixels", type=int, default=24)
+    remove_backgrounds.add_argument("--trim-min-alpha-coverage-ratio", type=float, default=0.02)
     remove_backgrounds.add_argument("--rembg-model", default="isnet-general-use")
     remove_backgrounds.add_argument("--slug", default=None)
     remove_backgrounds.add_argument("--limit", type=int, default=1)
@@ -546,6 +548,8 @@ def main() -> int:
                 trim_padding_ratio=args.trim_padding_ratio,
                 trim_min_width_ratio=args.trim_min_width_ratio,
                 trim_alpha_threshold=args.trim_alpha_threshold,
+                trim_min_alpha_pixels=args.trim_min_alpha_pixels,
+                trim_min_alpha_coverage_ratio=args.trim_min_alpha_coverage_ratio,
                 rembg_model=args.rembg_model,
                 slug=args.slug,
                 limit=None if args.all else args.limit,

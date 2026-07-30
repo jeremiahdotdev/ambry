@@ -22,13 +22,15 @@ class BackgroundRemovalOptions:
     thumb_height: int = 474
     thumb_width: int | None = None
     thumb_webp_quality: int = 80
-    tolerance: int = 10
-    transition: int = 52
-    feather_radius: float = 0.4
+    tolerance: int = 40
+    transition: int = 1
+    feather_radius: float = 0.0
     trim_horizontal: bool = True
     trim_padding_ratio: float = 0.015
     trim_min_width_ratio: float = 0.0
     trim_alpha_threshold: int = 8
+    trim_min_alpha_pixels: int = 24
+    trim_min_alpha_coverage_ratio: float = 0.02
     rembg_model: str = "isnet-general-use"
     slug: str | None = None
     limit: int | None = 1
@@ -130,6 +132,8 @@ def _remove_light_background(source_path: Path, output_path: Path, options: Back
             alpha = alpha.filter(ImageFilter.GaussianBlur(options.feather_radius))
             alpha = alpha.point(lambda value: 0 if value <= 3 else value)
 
+        alpha = _keep_non_edge_pixels_opaque(alpha, edge_background)
+
         result = rgba.copy()
         result.putalpha(alpha)
 
@@ -202,6 +206,19 @@ def _background_alpha(difference: Any, edge_background: bytearray, options: Back
             0,
             min(255, round(((value - options.tolerance) / transition) * 255)),
         )
+
+    return Image.frombytes("L", (width, height), bytes(alpha_values))
+
+
+def _keep_non_edge_pixels_opaque(alpha: Any, edge_background: bytearray) -> Any:
+    from PIL import Image
+
+    width, height = alpha.size
+    alpha_values = bytearray(alpha.tobytes())
+
+    for index, is_edge_background in enumerate(edge_background):
+        if not is_edge_background:
+            alpha_values[index] = 255
 
     return Image.frombytes("L", (width, height), bytes(alpha_values))
 
@@ -282,7 +299,12 @@ def _trim_horizontal_alpha(source_path: Path, output_path: Path, options: Backgr
 
     with Image.open(source_path) as image:
         rgba = image.convert("RGBA")
-        bounds = _horizontal_alpha_bounds(rgba, options.trim_alpha_threshold)
+        bounds = _horizontal_alpha_bounds(
+            rgba,
+            options.trim_alpha_threshold,
+            options.trim_min_alpha_pixels,
+            options.trim_min_alpha_coverage_ratio,
+        )
 
         if bounds is None:
             rgba.save(output_path, "PNG", optimize=True)
@@ -307,27 +329,49 @@ def _trim_horizontal_alpha(source_path: Path, output_path: Path, options: Backgr
         rgba.crop((crop_left, 0, crop_right, height)).save(output_path, "PNG", optimize=True)
 
 
-def _horizontal_alpha_bounds(image: Any, alpha_threshold: int) -> tuple[int, int] | None:
+def _horizontal_alpha_bounds(
+    image: Any,
+    alpha_threshold: int,
+    min_alpha_pixels: int,
+    min_alpha_coverage_ratio: float,
+) -> tuple[int, int] | None:
     alpha = image.getchannel("A")
     width, height = alpha.size
     values = alpha.load()
     threshold = max(0, min(255, alpha_threshold))
+    min_visible_pixels = max(
+        1,
+        min(height, min_alpha_pixels),
+        round(height * max(0, min(1, min_alpha_coverage_ratio))),
+    )
     left = None
     right = None
 
     for x in range(width):
+        visible_pixels = 0
+
         for y in range(height):
             if values[x, y] > threshold:
-                left = x
-                break
+                visible_pixels += 1
+
+                if visible_pixels >= min_visible_pixels:
+                    left = x
+                    break
+
         if left is not None:
             break
 
     for x in range(width - 1, -1, -1):
+        visible_pixels = 0
+
         for y in range(height):
             if values[x, y] > threshold:
-                right = x + 1
-                break
+                visible_pixels += 1
+
+                if visible_pixels >= min_visible_pixels:
+                    right = x + 1
+                    break
+
         if right is not None:
             break
 
@@ -391,6 +435,8 @@ def _write_metadata(
             "padding_ratio": options.trim_padding_ratio,
             "min_width_ratio": options.trim_min_width_ratio,
             "alpha_threshold": options.trim_alpha_threshold,
+            "min_alpha_pixels": options.trim_min_alpha_pixels,
+            "min_alpha_coverage_ratio": options.trim_min_alpha_coverage_ratio,
         },
         "output_format": "png",
         "derivatives": derivatives,

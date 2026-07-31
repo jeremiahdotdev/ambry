@@ -371,6 +371,18 @@
     margin: 0;
 }
 
+.saint-profile-location {
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 62%, transparent);
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.saint-profile-location + p {
+    margin-block-start: 0.28rem;
+}
+
 .saint-profile-list {
     display: grid;
     gap: 0.45rem;

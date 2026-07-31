@@ -23,6 +23,7 @@ class Saint extends Model
         'biography_formatted_at',
         'biography_format_error',
         'profile_summary',
+        'profile_subtitle',
         'profile_life_span',
         'profile_patronages',
         'profile_temperaments',

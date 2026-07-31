@@ -17,10 +17,7 @@ class SaintProfileController extends Controller
 
         return view('saints.index', [
             'saint' => $saint,
-            'subtitle' => match ($saint->slug) {
-                'st-patrick' => 'Bishop and Patron of Ireland',
-                default => null,
-            },
+            'subtitle' => $saint->profile_subtitle,
             'variant' => match ($saint->slug) {
                 'st-patrick' => 'classic-gold',
                 default => $saint->image_page_variant

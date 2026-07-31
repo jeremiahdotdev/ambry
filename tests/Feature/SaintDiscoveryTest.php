@@ -208,6 +208,7 @@ class SaintDiscoveryTest extends TestCase
             'primary_name' => 'St. Patrick',
             'slug' => 'st-patrick',
             'biography' => 'Apostle of Ireland.',
+            'profile_subtitle' => 'Bishop and Patron of Ireland',
             'birth_year' => 387,
             'death_year' => 493,
             'life_dates' => '387 AD - 493 AD',
@@ -340,10 +341,33 @@ class SaintDiscoveryTest extends TestCase
             ->assertOk()
             ->assertSee('<summary><h2>Sources</h2></summary>', false)
             ->assertSee('<summary><h2>Research Notes</h2></summary>', false)
+            ->assertSeeInOrder(['Research Notes', 'Sources'])
             ->assertSee('Source Title')
             ->assertSee('Needs follow-up on early chronology.')
             ->assertDontSee('Profile Sources')
             ->assertDontSee('<summary>Research notes</summary>', false);
+    }
+
+    public function test_saint_page_renders_landmark_locations_as_plain_text(): void
+    {
+        Saint::create([
+            'primary_name' => 'St. Landmark Example',
+            'slug' => 'st-landmark-example',
+            'biography' => 'A place-bound witness.',
+            'profile_landmarks' => [
+                [
+                    'name' => 'Ancient Church',
+                    'location' => 'Old Road 12, Example City',
+                    'description' => 'A remembered place.',
+                ],
+            ],
+        ]);
+
+        $this->get('/saints/st-landmark-example')
+            ->assertOk()
+            ->assertSee('<h2>Landmarks</h2>', false)
+            ->assertSee('<p class="saint-profile-location">Old Road 12, Example City</p>', false)
+            ->assertDontSee('<p class="saint-profile-meta"><span>Old Road 12, Example City</span></p>', false);
     }
 
     public function test_saint_page_uses_generated_portrait_and_variant_when_available(): void
@@ -388,8 +412,8 @@ class SaintDiscoveryTest extends TestCase
 
         $this->get('/saints/bl-adrian-fortescue')
             ->assertOk()
-            ->assertSee('<span>Blessed</span>', false)
-            ->assertDontSee('<span>Saint</span>', false)
+            ->assertSee('<span class="saint-kicker-label">Blessed</span>', false)
+            ->assertDontSee('<span class="saint-kicker-label">Saint</span>', false)
             ->assertSee('Adrian Fortescue');
     }
 
@@ -484,7 +508,7 @@ class SaintDiscoveryTest extends TestCase
 
         $this->getJson('/api/search?q=Patrick')
             ->assertOk()
-            ->assertJsonPath('data.0.name', 'Saint Patrick')
+            ->assertJsonPath('data.0.name', 'Patrick')
             ->assertJsonPath('data.0.slug', 'saint-patrick')
             ->assertJsonMissingPath('source_documents');
     }

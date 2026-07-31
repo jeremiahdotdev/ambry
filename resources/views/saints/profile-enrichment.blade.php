@@ -167,13 +167,26 @@
                     <article class="saint-profile-detail">
                         <h4>{{ $landmark['name'] }}</h4>
                         @if (filled($landmark['location'] ?? null))
-                            <p class="saint-profile-meta"><span>{{ $landmark['location'] }}</span></p>
+                            <p class="saint-profile-location">{{ $landmark['location'] }}</p>
                         @endif
                         @if (filled($landmark['description'] ?? null))
                             <p>{{ $landmark['description'] }}</p>
                         @endif
                     </article>
                 @endforeach
+            </section>
+        @endif
+
+        @if ($researchNotes->isNotEmpty())
+            <section class="saint-profile-block saint-profile-sources">
+                <details>
+                    <summary><h2>Research Notes</h2></summary>
+                    <ul>
+                        @foreach ($researchNotes as $note)
+                            <li>{{ $note }}</li>
+                        @endforeach
+                    </ul>
+                </details>
             </section>
         @endif
 
@@ -190,19 +203,6 @@
                             <p class="saint-profile-citation">{{ $formatCitation($source) }}</p>
                         @endif
                     @endforeach
-                </details>
-            </section>
-        @endif
-
-        @if ($researchNotes->isNotEmpty())
-            <section class="saint-profile-block saint-profile-sources">
-                <details>
-                    <summary><h2>Research Notes</h2></summary>
-                    <ul>
-                        @foreach ($researchNotes as $note)
-                            <li>{{ $note }}</li>
-                        @endforeach
-                    </ul>
                 </details>
             </section>
         @endif

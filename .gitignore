@@ -25,7 +25,9 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
-/data 
+/data
+/data/newadvent
+/tools/pipeline
 .vercel
 database/*.sqlite
 database/*.sqlite-*

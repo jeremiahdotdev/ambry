@@ -9,11 +9,14 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Artisan::command('sources:load-split {path=tools/pipeline/build/structured/manifest.json}', function (): int {
-    $path = base_path((string) $this->argument('path'));
+Artisan::command('sources:load-split {path=../ai-pipelines/data/processed/catholic-sources/structured/manifest.json}', function (): int {
+    $argument = (string) $this->argument('path');
+    $path = str_starts_with($argument, DIRECTORY_SEPARATOR)
+        ? $argument
+        : realpath(base_path($argument));
 
-    if (! is_file($path)) {
-        $this->error("Manifest not found: {$path}");
+    if ($path === false || ! is_file($path)) {
+        $this->error("Manifest not found: {$argument}");
 
         return self::FAILURE;
     }

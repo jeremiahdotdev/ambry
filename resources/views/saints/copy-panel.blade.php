@@ -3,7 +3,7 @@
         'name' => $saint->displayName(),
         'kicker' => $saint->displayCanonicalStatus(),
         'subtitle' => $subtitle ?? null,
-        'lifeDates' => $saint->displayLifeDates(),
+        'lifeDates' => $saint->displayProfileLifeDates() ?? $saint->displayLifeDates(),
     ])
 
     @if ($saint->patronages->isNotEmpty())
@@ -19,9 +19,31 @@
         </section>
     @endif
 
+    @php
+        $profileRoles = collect($saint->profile_church_roles ?? [])
+            ->filter(fn ($role) => is_array($role) && filled($role['label'] ?? $role['role'] ?? null));
+    @endphp
+
+    @if ($profileRoles->isNotEmpty())
+        <section class="saint-patronages saint-profile-roles" aria-labelledby="saint-profile-roles-title">
+            <h2 id="saint-profile-roles-title">Roles</h2>
+            <ul>
+                @foreach ($profileRoles as $role)
+                    <li>
+                        <span>{{ $role['label'] ?? \Illuminate\Support\Str::of((string) $role['role'])->replace('_', ' ')->title() }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
+
     <span class="saint-divider"></span>
 
-    @if (! empty($saint->biography_sections))
+    @if (filled($saint->profile_summary))
+        <div class="saint-intro saint-profile-summary">
+            <p>{{ $saint->profile_summary }}</p>
+        </div>
+    @elseif (! empty($saint->biography_sections))
         @include('saints.biography-sections', ['saint' => $saint])
     @elseif ($saint->displayBiography())
         <div class="saint-intro">
@@ -30,4 +52,6 @@
             @endforeach
         </div>
     @endif
+
+    @include('saints.profile-enrichment', ['saint' => $saint])
 </div>

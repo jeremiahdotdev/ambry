@@ -22,6 +22,22 @@ class Saint extends Model
         'biography_format_model',
         'biography_formatted_at',
         'biography_format_error',
+        'profile_enrichment',
+        'profile_summary',
+        'profile_life_span',
+        'profile_patronages',
+        'profile_temperaments',
+        'profile_key_struggles',
+        'profile_key_virtues',
+        'profile_church_roles',
+        'profile_feast_days',
+        'profile_related_saints',
+        'profile_works',
+        'profile_sources',
+        'profile_source_block',
+        'profile_research_notes',
+        'profile_enrichment_model',
+        'profile_enriched_at',
         'birth_year',
         'birth_year_qualifier',
         'death_year',
@@ -56,6 +72,20 @@ class Saint extends Model
             'biography_sections' => 'array',
             'biography_sources' => 'array',
             'biography_formatted_at' => 'datetime',
+            'profile_enrichment' => 'array',
+            'profile_life_span' => 'array',
+            'profile_patronages' => 'array',
+            'profile_temperaments' => 'array',
+            'profile_key_struggles' => 'array',
+            'profile_key_virtues' => 'array',
+            'profile_church_roles' => 'array',
+            'profile_feast_days' => 'array',
+            'profile_related_saints' => 'array',
+            'profile_works' => 'array',
+            'profile_sources' => 'array',
+            'profile_source_block' => 'array',
+            'profile_research_notes' => 'array',
+            'profile_enriched_at' => 'datetime',
             'virtues' => 'array',
             'vices' => 'array',
             'roles' => 'array',
@@ -88,6 +118,44 @@ class Saint extends Model
         }
 
         return $this->formatLifeDatesString($this->life_dates);
+    }
+
+    public function displayProfileLifeDates(): ?string
+    {
+        $lifeSpan = is_array($this->profile_life_span) ? $this->profile_life_span : [];
+        $birthDate = $lifeSpan['birth'] ?? null;
+        $deathDate = $lifeSpan['death'] ?? null;
+        $birth = $this->formatProfileLifeDate($birthDate);
+        $death = $this->formatProfileLifeDate($deathDate);
+
+        if ($birth && $death && $this->isUsableProfileDate($birthDate) && $this->isUsableProfileDate($deathDate)) {
+            return "{$birth}-{$death} AD";
+        }
+
+        $activeCenturies = collect($lifeSpan['active_centuries'] ?? [])
+            ->filter(fn ($century): bool => is_numeric($century))
+            ->map(fn ($century): int => (int) $century)
+            ->unique()
+            ->sort()
+            ->values();
+
+        if ($activeCenturies->isEmpty()) {
+            if ($birth) {
+                return "b. {$birth} AD";
+            }
+
+            if ($death) {
+                return "d. {$death} AD";
+            }
+
+            return null;
+        }
+
+        if ($activeCenturies->count() === 1) {
+            return 'Active '.$this->formatCentury($activeCenturies->first());
+        }
+
+        return 'Active '.$this->formatCenturyOrdinal($activeCenturies->first()).'-'.$this->formatCenturyOrdinal($activeCenturies->last()).' centuries';
     }
 
     public function displayName(): string
@@ -162,6 +230,73 @@ class Saint extends Model
         $lifeDates = preg_replace('/\b(\d{1,4})\s*AD\s*[-–—]\s*(\d{1,4})\s*AD\b/i', '$1-$2 AD', $lifeDates);
 
         return preg_replace('/\s+[-–—]\s+/', '-', $lifeDates);
+    }
+
+    private function formatProfileLifeDate(mixed $date): ?string
+    {
+        if (! is_array($date)) {
+            return null;
+        }
+
+        $year = $this->yearFromProfileDate($date);
+
+        if (! $year) {
+            return null;
+        }
+
+        return ! empty($date['is_circa']) || ($date['certainty'] ?? null) === 'approximate'
+            ? "c. {$year}"
+            : (string) $year;
+    }
+
+    private function isUsableProfileDate(mixed $date): bool
+    {
+        if (! is_array($date)) {
+            return false;
+        }
+
+        if (in_array($date['certainty'] ?? null, ['disputed', 'unknown'], true)) {
+            return false;
+        }
+
+        return $this->yearFromProfileDate($date) !== null;
+    }
+
+    private function yearFromProfileDate(array $date): ?int
+    {
+        if (is_numeric($date['year'] ?? null)) {
+            return (int) $date['year'];
+        }
+
+        $timestamp = (string) ($date['timestamp'] ?? '');
+
+        if (preg_match('/^(\d{1,4})-/', $timestamp, $matches) === 1) {
+            return (int) $matches[1];
+        }
+
+        return null;
+    }
+
+    private function formatCentury(int $century): string
+    {
+        return $this->formatCenturyOrdinal($century).' century';
+    }
+
+    private function formatCenturyOrdinal(int $century): string
+    {
+        $absolute = abs($century);
+        $suffix = 'th';
+
+        if (! in_array($absolute % 100, [11, 12, 13], true)) {
+            $suffix = match ($absolute % 10) {
+                1 => 'st',
+                2 => 'nd',
+                3 => 'rd',
+                default => 'th',
+            };
+        }
+
+        return "{$century}{$suffix}";
     }
 
     private function stripLeadingRepeatedName(string $biography): string

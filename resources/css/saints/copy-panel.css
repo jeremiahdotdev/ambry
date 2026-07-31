@@ -189,7 +189,8 @@
     list-style: none;
 }
 
-.saint-patronages a {
+.saint-patronages a,
+.saint-patronages span {
     display: inline-flex;
     align-items: center;
     min-height: 1.8rem;
@@ -209,6 +210,223 @@
     border-color: var(--saint-accent, #4e7b68);
     background: color-mix(in srgb, var(--saint-accent, #4e7b68) 8%, var(--saint-card, #f7f8ee));
     color: var(--saint-accent, #4e7b68);
+}
+
+.saint-profile-enrichment {
+    display: grid;
+    gap: 1.15rem;
+    margin-block-start: clamp(1.5rem, 3.6vh, 2.35rem);
+    color: var(--saint-text, var(--color-foreground));
+}
+
+.saint-profile-block {
+    padding-block-start: 1.05rem;
+    border-block-start: 1px solid color-mix(in srgb, var(--saint-border, var(--color-border)) 70%, transparent);
+}
+
+.saint-profile-block h2,
+.saint-profile-block h3 {
+    margin: 0 0 0.62rem;
+    color: var(--saint-accent, #4e7b68);
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    font-weight: 850;
+    letter-spacing: 0.12em;
+    line-height: 1.35;
+    text-transform: uppercase;
+}
+
+.saint-profile-block h2 {
+    font-size: 0.72rem;
+}
+
+.saint-profile-block h3 {
+    margin-block-start: 0.95rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+}
+
+.saint-profile-block p,
+.saint-profile-block li,
+.saint-profile-facts dd {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(0.95rem, 0.3vw + 0.9rem, 1.08rem);
+    line-height: 1.62;
+}
+
+.saint-profile-summary p {
+    margin: 0;
+}
+
+.saint-profile-facts {
+    display: grid;
+    gap: 0.7rem;
+    margin: 0;
+}
+
+.saint-profile-facts div {
+    display: grid;
+    gap: 0.18rem;
+    padding-inline-start: 0.75rem;
+    border-inline-start: 3px solid color-mix(in srgb, var(--saint-accent, #4e7b68) 34%, transparent);
+}
+
+.saint-profile-facts dt {
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 62%, transparent);
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.saint-profile-facts dd {
+    margin: 0;
+    font-weight: 700;
+}
+
+.saint-profile-facts dd span,
+.saint-profile-list span {
+    display: block;
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 62%, transparent);
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.saint-profile-meta,
+.saint-profile-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0 0 0.8rem;
+}
+
+.saint-profile-meta span,
+.saint-profile-chip-list span,
+.saint-profile-chip-list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.8rem;
+    padding-inline: 0.68rem;
+    border: 1px solid color-mix(in srgb, var(--saint-accent, #4e7b68) 20%, transparent);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--saint-card, #f7f8ee) 88%, white);
+    color: var(--saint-text, var(--color-foreground));
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    font-size: 0.78rem;
+    font-weight: 750;
+    text-decoration: none;
+}
+
+.saint-profile-chip-list a:hover,
+.saint-profile-chip-list a:focus-visible {
+    border-color: var(--saint-accent, #4e7b68);
+    background: color-mix(in srgb, var(--saint-accent, #4e7b68) 8%, var(--saint-card, #f7f8ee));
+    color: var(--saint-accent, #4e7b68);
+}
+
+.saint-temperament-scores {
+    display: grid;
+    gap: 0.48rem;
+}
+
+.saint-temperament-score {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 0.8fr) minmax(5rem, 1fr) 2.2rem;
+    gap: 0.55rem;
+    align-items: center;
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    font-size: 0.76rem;
+    font-weight: 800;
+}
+
+.saint-temperament-score i {
+    display: block;
+    block-size: 0.48rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--saint-border, var(--color-border)) 46%, white);
+}
+
+.saint-temperament-score b {
+    display: block;
+    block-size: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--saint-accent, #4e7b68), color-mix(in srgb, var(--saint-accent, #4e7b68) 42%, var(--saint-text, #20252d)));
+}
+
+.saint-temperament-score strong {
+    justify-self: end;
+}
+
+.saint-profile-two-column {
+    display: grid;
+    gap: 1rem;
+}
+
+.saint-profile-detail + .saint-profile-detail {
+    margin-block-start: 0.82rem;
+}
+
+.saint-profile-detail h4 {
+    margin: 0 0 0.22rem;
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 86%, var(--saint-accent, #4e7b68));
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    font-size: 0.86rem;
+    font-weight: 850;
+}
+
+.saint-profile-detail p {
+    margin: 0;
+}
+
+.saint-profile-list {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0.8rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.saint-profile-list strong {
+    display: block;
+    font-weight: 800;
+}
+
+.saint-profile-empty {
+    margin: 0;
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 62%, transparent);
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif) !important;
+    font-size: 0.8rem !important;
+    font-weight: 700;
+}
+
+.saint-profile-sources {
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 76%, transparent);
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    font-size: 0.78rem;
+}
+
+.saint-profile-sources p,
+.saint-profile-sources li {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.5;
+}
+
+.saint-profile-sources a {
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 64%, transparent);
+    font-weight: 700;
+}
+
+.saint-profile-sources summary {
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.saint-profile-sources ul {
+    margin-block-end: 0;
+    padding-inline-start: 1.1rem;
 }
 
 .saint-copy-panel > * {
@@ -236,5 +454,9 @@
 
     .saint-copy-panel > * {
         inline-size: min(100%, 38rem);
+    }
+
+    .saint-profile-two-column {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }

@@ -108,6 +108,108 @@ Artisan::command('sources:load-split {path=../ai-pipelines/data/processed/cathol
     return self::SUCCESS;
 })->purpose('Load split DB-ready source documents and citations into the active database connection.');
 
+Artisan::command('profile-enrichment:sync {path=../ai-pipelines/data/processed/catholic-sources/raw/profile-enrichment} {--slug=* : Only sync one or more slugs} {--dry-run : Show what would be updated without writing}', function (): int {
+    $argument = (string) $this->argument('path');
+    $path = str_starts_with($argument, DIRECTORY_SEPARATOR)
+        ? $argument
+        : base_path($argument);
+    $dryRun = (bool) $this->option('dry-run');
+    $slugs = collect((array) $this->option('slug'))
+        ->filter()
+        ->values();
+
+    if (! file_exists($path)) {
+        $this->error("Profile enrichment path not found: {$argument}");
+
+        return self::FAILURE;
+    }
+
+    $files = is_file($path)
+        ? collect([$path])
+        : collect(glob(rtrim($path, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'*'.DIRECTORY_SEPARATOR.'response.output.json') ?: []);
+
+    if ($slugs->isNotEmpty()) {
+        $files = $files->filter(function (string $file) use ($slugs): bool {
+            $slug = basename(dirname($file));
+
+            return $slugs->contains($slug);
+        })->values();
+    }
+
+    if ($files->isEmpty()) {
+        $this->warn('No profile enrichment response.output.json files found.');
+
+        return self::SUCCESS;
+    }
+
+    $encodeJson = fn ($value): ?string => $value === null ? null : json_encode($value, JSON_UNESCAPED_UNICODE);
+    $updated = 0;
+    $missing = 0;
+    $failed = 0;
+
+    foreach ($files as $file) {
+        $payload = json_decode((string) file_get_contents($file), true);
+
+        if (! is_array($payload)) {
+            $failed++;
+            $this->error("Invalid JSON: {$file}");
+
+            continue;
+        }
+
+        $slug = (string) ($payload['slug'] ?? basename(dirname($file)));
+        $requestPath = dirname($file).DIRECTORY_SEPARATOR.'request.json';
+        $request = is_file($requestPath)
+            ? json_decode((string) file_get_contents($requestPath), true)
+            : [];
+
+        if (! DB::table('saints')->where('slug', $slug)->exists()) {
+            $missing++;
+            $this->warn("No saint found for {$slug}");
+
+            continue;
+        }
+
+        $values = [
+            'profile_enrichment' => $encodeJson($payload),
+            'profile_summary' => $payload['summary'] ?? null,
+            'profile_life_span' => $encodeJson($payload['life_span'] ?? null),
+            'profile_patronages' => $encodeJson($payload['patronages'] ?? null),
+            'profile_temperaments' => $encodeJson($payload['temperaments'] ?? null),
+            'profile_key_struggles' => $encodeJson($payload['key_struggles'] ?? null),
+            'profile_key_virtues' => $encodeJson($payload['key_virtues'] ?? null),
+            'profile_church_roles' => $encodeJson($payload['church_roles'] ?? null),
+            'profile_feast_days' => $encodeJson($payload['feast_days'] ?? null),
+            'profile_related_saints' => $encodeJson($payload['related_saints'] ?? null),
+            'profile_works' => $encodeJson($payload['works'] ?? null),
+            'profile_sources' => $encodeJson($payload['sources'] ?? null),
+            'profile_source_block' => $encodeJson($payload['source_block'] ?? null),
+            'profile_research_notes' => $encodeJson($payload['research_notes'] ?? null),
+            'profile_enrichment_model' => is_array($request) ? ($request['model'] ?? null) : null,
+            'profile_enriched_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        $this->line(($dryRun ? 'Would sync ' : 'Syncing ').$slug);
+
+        if (! $dryRun) {
+            DB::table('saints')->where('slug', $slug)->update($values);
+        }
+
+        $updated++;
+    }
+
+    $this->info(sprintf(
+        '%s %s profile enrichment rows. Missing: %s. Failed: %s.',
+        $dryRun ? 'Would sync' : 'Synced',
+        number_format($updated),
+        number_format($missing),
+        number_format($failed),
+    ));
+
+    return $failed > 0 ? self::FAILURE : self::SUCCESS;
+})->purpose('Sync saved AI profile enrichment JSON into new saints.profile_* columns only.');
+
 Artisan::command('db:copy-sqlite-to-pgsql {--source=database/database.sqlite} {--fresh : Drop and recreate the target schema before copying} {--dry-run : Show what would be copied without writing}', function (): int {
     $source = base_path((string) $this->option('source'));
     $dryRun = (bool) $this->option('dry-run');

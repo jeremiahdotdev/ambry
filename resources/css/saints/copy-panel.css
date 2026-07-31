@@ -257,6 +257,10 @@
     margin: 0;
 }
 
+.saint-profile-summary p + p {
+    margin-block-start: 1em;
+}
+
 .saint-profile-facts {
     display: grid;
     gap: 0.7rem;

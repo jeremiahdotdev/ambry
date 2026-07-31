@@ -47,8 +47,15 @@
     <span class="saint-divider"></span>
 
     @if (filled($saint->profile_summary))
+        @php
+            $profileSummaryParagraphs = collect(preg_split('/\R{2,}/u', trim((string) $saint->profile_summary)) ?: [])
+                ->map(fn ($paragraph) => trim($paragraph))
+                ->filter();
+        @endphp
         <div class="saint-intro saint-profile-summary">
-            <p>{{ $saint->profile_summary }}</p>
+            @foreach ($profileSummaryParagraphs as $paragraph)
+                <p>{{ $paragraph }}</p>
+            @endforeach
         </div>
     @elseif (! empty($saint->biography_sections))
         @include('saints.biography-sections', ['saint' => $saint])

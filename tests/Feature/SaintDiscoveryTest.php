@@ -202,6 +202,57 @@ class SaintDiscoveryTest extends TestCase
             ->assertDontSee('Saint Unfiltered Example');
     }
 
+    public function test_search_strips_honorific_prefixes_and_selects_the_matching_type(): void
+    {
+        Saint::create([
+            'primary_name' => 'Saint Patrick',
+            'slug' => 'saint-patrick',
+            'canonical_status' => 'saint',
+        ]);
+
+        Saint::create([
+            'primary_name' => 'Pope Leo XIII',
+            'slug' => 'pope-leo-xiii',
+            'canonical_status' => 'pope',
+        ]);
+
+        Saint::create([
+            'primary_name' => 'Bl. Carlo Acutis',
+            'slug' => 'bl-carlo-acutis',
+            'canonical_status' => 'blessed',
+        ]);
+
+        Saint::create([
+            'primary_name' => 'Ven. Mary Ward',
+            'slug' => 'ven-mary-ward',
+            'canonical_status' => 'venerable',
+        ]);
+
+        $this->get('/search?q=St.%20Patrick&type=pope')
+            ->assertOk()
+            ->assertSee('<h1>Saints</h1>', false)
+            ->assertSee('Patrick')
+            ->assertDontSee('Leo XIII');
+
+        $this->get('/search?q=Pope%20St.%20Leo')
+            ->assertOk()
+            ->assertSee('<h1>Popes</h1>', false)
+            ->assertSee('Leo XIII')
+            ->assertDontSee('Patrick');
+
+        $this->get('/search?q=Bl.%20Carlo')
+            ->assertOk()
+            ->assertSee('<h1>Blessed</h1>', false)
+            ->assertSee('Carlo Acutis')
+            ->assertDontSee('Patrick');
+
+        $this->get('/search?q=Ven%20Mary')
+            ->assertOk()
+            ->assertSee('<h1>Venerable</h1>', false)
+            ->assertSee('Mary Ward')
+            ->assertDontSee('Patrick');
+    }
+
     public function test_saint_page_renders_the_saint_layout(): void
     {
         $patrick = Saint::create([
@@ -247,6 +298,24 @@ class SaintDiscoveryTest extends TestCase
             ->assertOk()
             ->assertSee('<h2 id="saint-profile-roles-title">Roles</h2>', false)
             ->assertSee('<span>Martyr</span>', false);
+    }
+
+    public function test_saint_page_renders_profile_summary_blank_lines_as_paragraphs(): void
+    {
+        Saint::create([
+            'primary_name' => 'St. Summary Example',
+            'slug' => 'st-summary-example',
+            'biography' => 'Fallback biography.',
+            'profile_summary' => "First summary paragraph.\n\nSecond summary paragraph.",
+        ]);
+
+        $this->get('/saints/st-summary-example')
+            ->assertOk()
+            ->assertSeeInOrder([
+                '<p>First summary paragraph.</p>',
+                '<p>Second summary paragraph.</p>',
+            ], false)
+            ->assertDontSee("First summary paragraph.\n\nSecond summary paragraph.");
     }
 
     public function test_saint_page_uses_single_line_title_sizing_for_wide_names(): void

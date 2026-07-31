@@ -21,7 +21,14 @@
 
     @php
         $profileRoles = collect($saint->profile_church_roles ?? [])
-            ->filter(fn ($role) => is_array($role) && filled($role['label'] ?? $role['role'] ?? null));
+            ->filter(fn ($role) => is_array($role) && filled($role['label'] ?? $role['role'] ?? null))
+            ->map(fn ($role) => [
+                'label' => (string) ($role['label'] ?? \Illuminate\Support\Str::of((string) $role['role'])->replace('_', ' ')->title()),
+            ]);
+
+        if ($saint->is_martyr && ! $profileRoles->contains(fn ($role) => strtolower($role['label']) === 'martyr')) {
+            $profileRoles->push(['label' => 'Martyr']);
+        }
     @endphp
 
     @if ($profileRoles->isNotEmpty())
@@ -30,7 +37,7 @@
             <ul>
                 @foreach ($profileRoles as $role)
                     <li>
-                        <span>{{ $role['label'] ?? \Illuminate\Support\Str::of((string) $role['role'])->replace('_', ' ')->title() }}</span>
+                        <span>{{ $role['label'] }}</span>
                     </li>
                 @endforeach
             </ul>

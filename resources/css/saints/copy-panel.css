@@ -332,7 +332,7 @@
 
 .saint-temperament-score {
     display: grid;
-    grid-template-columns: minmax(6.5rem, 0.8fr) minmax(5rem, 1fr) 2.2rem;
+    grid-template-columns: minmax(6.5rem, 0.8fr) minmax(5rem, 1fr);
     gap: 0.55rem;
     align-items: center;
     font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
@@ -353,15 +353,6 @@
     block-size: 100%;
     border-radius: inherit;
     background: linear-gradient(90deg, var(--saint-accent, #4e7b68), color-mix(in srgb, var(--saint-accent, #4e7b68) 42%, var(--saint-text, #20252d)));
-}
-
-.saint-temperament-score strong {
-    justify-self: end;
-}
-
-.saint-profile-two-column {
-    display: grid;
-    gap: 1rem;
 }
 
 .saint-profile-detail + .saint-profile-detail {
@@ -419,9 +410,28 @@
     font-weight: 700;
 }
 
+.saint-profile-citation {
+    margin-block: 0.28rem;
+    padding-inline-start: 1rem;
+    color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 68%, transparent);
+}
+
+.saint-profile-citation a {
+    color: inherit;
+    font-weight: 650;
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    text-decoration-color: color-mix(in srgb, currentColor 72%, transparent);
+}
+
 .saint-profile-sources summary {
+    display: list-item;
     cursor: pointer;
-    font-weight: 800;
+}
+
+.saint-profile-sources summary h2 {
+    display: inline;
 }
 
 .saint-profile-sources ul {
@@ -456,7 +466,4 @@
         inline-size: min(100%, 38rem);
     }
 
-    .saint-profile-two-column {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
 }

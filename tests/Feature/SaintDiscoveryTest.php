@@ -221,6 +221,7 @@ class SaintDiscoveryTest extends TestCase
         $this->get('/saints/st-patrick')
             ->assertOk()
             ->assertSee('Patrick')
+            ->assertSee('<svg class="saint-cross"', false)
             ->assertSee('Bishop and Patron of Ireland')
             ->assertSee('387-493 AD')
             ->assertSee('Patronages')
@@ -230,6 +231,119 @@ class SaintDiscoveryTest extends TestCase
             ->assertSee('saints/st-patrick.png')
             ->assertSee('Back to search')
             ->assertSee('Apostle of Ireland.');
+    }
+
+    public function test_saint_page_adds_martyr_to_roles_when_marked_as_martyr(): void
+    {
+        Saint::create([
+            'primary_name' => 'St. Martyr Role Example',
+            'slug' => 'st-martyr-role-example',
+            'biography' => 'A faithful witness.',
+            'is_martyr' => true,
+        ]);
+
+        $this->get('/saints/st-martyr-role-example')
+            ->assertOk()
+            ->assertSee('<h2 id="saint-profile-roles-title">Roles</h2>', false)
+            ->assertSee('<span>Martyr</span>', false);
+    }
+
+    public function test_saint_page_uses_single_line_title_sizing_for_wide_names(): void
+    {
+        Saint::create([
+            'primary_name' => 'St. Bartholomew',
+            'slug' => 'st-bartholomew',
+            'biography' => 'One of the Twelve.',
+        ]);
+
+        $this->get('/saints/st-bartholomew')
+            ->assertOk()
+            ->assertSee('<h1 class="saint-title saint-title--wide" style="--saint-title-length: 11;">Bartholomew</h1>', false);
+    }
+
+    public function test_saint_page_scales_temperament_scores_to_seventy_five_percent(): void
+    {
+        Saint::create([
+            'primary_name' => 'St. Balanced Example',
+            'slug' => 'st-balanced-example',
+            'biography' => 'A steady witness.',
+            'profile_temperaments' => [
+                'primary' => 'choleric',
+                'secondary' => 'melancholic',
+                'scores' => [
+                    'choleric' => 25,
+                    'melancholic' => 10,
+                    'sanguine' => 5,
+                ],
+            ],
+        ]);
+
+        $this->get('/saints/st-balanced-example')
+            ->assertOk()
+            ->assertSee('inline-size: 75%;', false)
+            ->assertSee('inline-size: 30%;', false)
+            ->assertSee('inline-size: 15%;', false)
+            ->assertDontSee('<strong>75</strong>', false)
+            ->assertDontSee('Primary:')
+            ->assertDontSee('Secondary:');
+    }
+
+    public function test_saint_page_renders_virtues_and_vices_as_separate_sections(): void
+    {
+        Saint::create([
+            'primary_name' => 'St. Interior Example',
+            'slug' => 'st-interior-example',
+            'biography' => 'A converted life.',
+            'profile_key_virtues' => [
+                [
+                    'name' => 'patience',
+                    'summary' => 'Waited with trust.',
+                ],
+            ],
+            'profile_key_struggles' => [
+                [
+                    'name' => 'impatience',
+                    'summary' => 'Had to grow in steadiness.',
+                ],
+            ],
+        ]);
+
+        $this->get('/saints/st-interior-example')
+            ->assertOk()
+            ->assertSee('<h2>Virtues</h2>', false)
+            ->assertSee('<h2>Vices</h2>', false)
+            ->assertSee('Waited with trust.')
+            ->assertSee('Had to grow in steadiness.')
+            ->assertDontSee('Interior Life')
+            ->assertDontSee('saint-profile-two-column');
+    }
+
+    public function test_saint_page_renders_sources_and_research_notes_as_separate_collapsible_sections(): void
+    {
+        Saint::create([
+            'primary_name' => 'St. Source Example',
+            'slug' => 'st-source-example',
+            'biography' => 'A documented life.',
+            'profile_sources' => [
+                [
+                    'title' => 'Source Title',
+                    'url' => 'https://example.com/source',
+                    'accessed_date' => '2026-07-31',
+                ],
+            ],
+            'profile_research_notes' => [
+                'Needs follow-up on early chronology.',
+            ],
+        ]);
+
+        $this->get('/saints/st-source-example')
+            ->assertOk()
+            ->assertSee('<summary><h2>Sources</h2></summary>', false)
+            ->assertSee('<summary><h2>Research Notes</h2></summary>', false)
+            ->assertSee('Source Title')
+            ->assertSee('Needs follow-up on early chronology.')
+            ->assertDontSee('Profile Sources')
+            ->assertDontSee('<summary>Research notes</summary>', false);
     }
 
     public function test_saint_page_uses_generated_portrait_and_variant_when_available(): void

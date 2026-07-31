@@ -22,7 +22,6 @@ class Saint extends Model
         'biography_format_model',
         'biography_formatted_at',
         'biography_format_error',
-        'profile_enrichment',
         'profile_summary',
         'profile_life_span',
         'profile_patronages',
@@ -33,11 +32,10 @@ class Saint extends Model
         'profile_feast_days',
         'profile_related_saints',
         'profile_works',
+        'profile_landmarks',
         'profile_sources',
         'profile_source_block',
         'profile_research_notes',
-        'profile_enrichment_model',
-        'profile_enriched_at',
         'birth_year',
         'birth_year_qualifier',
         'death_year',
@@ -72,7 +70,6 @@ class Saint extends Model
             'biography_sections' => 'array',
             'biography_sources' => 'array',
             'biography_formatted_at' => 'datetime',
-            'profile_enrichment' => 'array',
             'profile_life_span' => 'array',
             'profile_patronages' => 'array',
             'profile_temperaments' => 'array',
@@ -82,10 +79,10 @@ class Saint extends Model
             'profile_feast_days' => 'array',
             'profile_related_saints' => 'array',
             'profile_works' => 'array',
+            'profile_landmarks' => 'array',
             'profile_sources' => 'array',
             'profile_source_block' => 'array',
             'profile_research_notes' => 'array',
-            'profile_enriched_at' => 'datetime',
             'virtues' => 'array',
             'vices' => 'array',
             'roles' => 'array',
@@ -128,8 +125,16 @@ class Saint extends Model
         $birth = $this->formatProfileLifeDate($birthDate);
         $death = $this->formatProfileLifeDate($deathDate);
 
-        if ($birth && $death && $this->isUsableProfileDate($birthDate) && $this->isUsableProfileDate($deathDate)) {
+        if ($birth && $death) {
             return "{$birth}-{$death} AD";
+        }
+
+        if ($birth) {
+            return "b. {$birth} AD";
+        }
+
+        if ($death) {
+            return "d. {$death} AD";
         }
 
         $activeCenturies = collect($lifeSpan['active_centuries'] ?? [])
@@ -140,14 +145,6 @@ class Saint extends Model
             ->values();
 
         if ($activeCenturies->isEmpty()) {
-            if ($birth) {
-                return "b. {$birth} AD";
-            }
-
-            if ($death) {
-                return "d. {$death} AD";
-            }
-
             return null;
         }
 
@@ -247,19 +244,6 @@ class Saint extends Model
         return ! empty($date['is_circa']) || ($date['certainty'] ?? null) === 'approximate'
             ? "c. {$year}"
             : (string) $year;
-    }
-
-    private function isUsableProfileDate(mixed $date): bool
-    {
-        if (! is_array($date)) {
-            return false;
-        }
-
-        if (in_array($date['certainty'] ?? null, ['disputed', 'unknown'], true)) {
-            return false;
-        }
-
-        return $this->yearFromProfileDate($date) !== null;
     }
 
     private function yearFromProfileDate(array $date): ?int

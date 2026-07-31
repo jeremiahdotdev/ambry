@@ -7,9 +7,16 @@
     $feastDays = collect($saint->profile_feast_days ?? [])->filter(fn ($item) => is_array($item) && filled($item['name'] ?? null));
     $relatedSaints = collect($saint->profile_related_saints ?? [])->filter(fn ($item) => is_array($item) && filled($item['name'] ?? null));
     $works = collect($saint->profile_works ?? [])->filter(fn ($item) => is_array($item) && filled($item['name'] ?? null));
+    $landmarks = collect($saint->profile_landmarks ?? [])->filter(fn ($item) => is_array($item) && filled($item['name'] ?? null));
     $sources = collect($saint->profile_sources ?? [])->filter(fn ($item) => is_array($item) && filled($item['title'] ?? null));
     $researchNotes = collect($saint->profile_research_notes ?? [])->filter();
-    $temperamentScores = collect($temperaments['scores'] ?? [])->filter(fn ($score) => is_numeric($score));
+    $temperamentScores = collect($temperaments['scores'] ?? [])
+        ->filter(fn ($score) => is_numeric($score))
+        ->map(fn ($score) => max(0, (float) $score));
+    $temperamentMax = $temperamentScores->max();
+    $temperamentScale = $temperamentMax > 0 ? 75 / $temperamentMax : 0;
+    $temperamentDisplayScores = $temperamentScores
+        ->map(fn ($score) => max(0, min(75, (int) round($score * $temperamentScale))));
     $monthNames = [
         1 => 'January',
         2 => 'February',
@@ -33,12 +40,30 @@
         || $feastDays->isNotEmpty()
         || $relatedSaints->isNotEmpty()
         || $works->isNotEmpty()
+        || $landmarks->isNotEmpty()
         || $sources->isNotEmpty()
         || $researchNotes->isNotEmpty();
     $sourceIds = fn ($item) => collect($item['source_ids'] ?? [])
         ->filter()
         ->map(fn ($sourceId) => '<span>'.e($sourceId).'</span>')
         ->implode('');
+    $formatCitation = function (array $source): string {
+        $isNewAdvent = ($source['source_type'] ?? null) === 'new_advent'
+            || str_contains((string) ($source['url'] ?? ''), 'newadvent.org');
+        $publisherOrAuthor = trim((string) ($source['publisher_or_author'] ?? ''));
+        $title = trim((string) ($source['title'] ?? ''));
+        $accessed = filled($source['accessed_date'] ?? null)
+            ? 'Accessed '.$source['accessed_date']
+            : 'Accessed '.now()->year;
+        $parts = collect([
+            filled($publisherOrAuthor) ? rtrim($publisherOrAuthor, '.') : null,
+            filled($title) ? '“'.rtrim($title, '.').'.”' : null,
+            $isNewAdvent ? 'New Advent' : null,
+            $accessed,
+        ])->filter()->implode('. ');
+
+        return preg_replace('/\.”\.\s+/', '.” ', Str::finish($parts, '.')) ?? Str::finish($parts, '.');
+    };
 @endphp
 
 @if ($hasProfile)
@@ -46,62 +71,44 @@
         @if ($temperamentScores->isNotEmpty())
             <section class="saint-profile-block">
                 <h2>Temperament</h2>
-                <p class="saint-profile-meta">
-                    @if (filled($temperaments['primary'] ?? null))
-                        <span>Primary: {{ $temperaments['primary'] }}</span>
-                    @endif
-                    @if (filled($temperaments['secondary'] ?? null))
-                        <span>Secondary: {{ $temperaments['secondary'] }}</span>
-                    @endif
-                </p>
                 <div class="saint-temperament-scores">
-                    @foreach ($temperamentScores as $name => $score)
-                        @php($scoreValue = max(0, min(100, (int) $score)))
+                    @foreach ($temperamentDisplayScores as $name => $scoreValue)
                         <div class="saint-temperament-score">
                             <span>{{ Str::of((string) $name)->replace('_', ' ')->title() }}</span>
                             <i><b style="inline-size: {{ $scoreValue }}%;"></b></i>
-                            <strong>{{ $scoreValue }}</strong>
                         </div>
                     @endforeach
                 </div>
             </section>
         @endif
 
-        @if ($vices->isNotEmpty() || $virtues->isNotEmpty())
+        @if ($virtues->isNotEmpty())
             <section class="saint-profile-block">
-                <h2>Interior Life</h2>
-                <div class="saint-profile-two-column">
-                    @if ($vices->isNotEmpty())
-                        <div>
-                            <h3>Vices</h3>
-                            @foreach ($vices as $vice)
-                                <article class="saint-profile-detail">
-                                    <h4>{{ Str::of((string) $vice['name'])->replace('_', ' ')->title() }}</h4>
-                                    @if (filled($vice['summary'] ?? null))
-                                        <p>{{ $vice['summary'] }}</p>
-                                    @endif
-                                </article>
-                            @endforeach
-                        </div>
-                    @endif
-
-                    @if ($virtues->isNotEmpty())
-                        <div>
-                            <h3>Virtues</h3>
-                            @foreach ($virtues as $virtue)
-                                <article class="saint-profile-detail">
-                                    <h4>{{ Str::of((string) $virtue['name'])->replace('_', ' ')->title() }}</h4>
-                                    @if (filled($virtue['summary'] ?? null))
-                                        <p>{{ $virtue['summary'] }}</p>
-                                    @endif
-                                </article>
-                            @endforeach
-                        </div>
-                    @endif
-                </div>
+                <h2>Virtues</h2>
+                @foreach ($virtues as $virtue)
+                    <article class="saint-profile-detail">
+                        <h4>{{ Str::of((string) $virtue['name'])->replace('_', ' ')->title() }}</h4>
+                        @if (filled($virtue['summary'] ?? null))
+                            <p>{{ $virtue['summary'] }}</p>
+                        @endif
+                    </article>
+                @endforeach
             </section>
         @endif
 
+        @if ($vices->isNotEmpty())
+            <section class="saint-profile-block">
+                <h2>Vices</h2>
+                @foreach ($vices as $vice)
+                    <article class="saint-profile-detail">
+                        <h4>{{ Str::of((string) $vice['name'])->replace('_', ' ')->title() }}</h4>
+                        @if (filled($vice['summary'] ?? null))
+                            <p>{{ $vice['summary'] }}</p>
+                        @endif
+                    </article>
+                @endforeach
+            </section>
+        @endif
         @if ($hasProfile)
             <section class="saint-profile-block">
                 <h2>Feast Days</h2>
@@ -153,27 +160,50 @@
             </section>
         @endif
 
-        @if ($sources->isNotEmpty() || $researchNotes->isNotEmpty())
-            <section class="saint-profile-block saint-profile-sources">
-                <h2>Profile Sources</h2>
-                @foreach ($sources as $source)
-                    @if (filled($source['url'] ?? null))
-                        <p><a href="{{ $source['url'] }}" target="_blank" rel="noreferrer">{{ $source['title'] }}</a></p>
-                    @else
-                        <p>{{ $source['title'] }}</p>
-                    @endif
+        @if ($landmarks->isNotEmpty())
+            <section class="saint-profile-block">
+                <h2>Landmarks</h2>
+                @foreach ($landmarks as $landmark)
+                    <article class="saint-profile-detail">
+                        <h4>{{ $landmark['name'] }}</h4>
+                        @if (filled($landmark['location'] ?? null))
+                            <p class="saint-profile-meta"><span>{{ $landmark['location'] }}</span></p>
+                        @endif
+                        @if (filled($landmark['description'] ?? null))
+                            <p>{{ $landmark['description'] }}</p>
+                        @endif
+                    </article>
                 @endforeach
+            </section>
+        @endif
 
-                @if ($researchNotes->isNotEmpty())
-                    <details>
-                        <summary>Research notes</summary>
-                        <ul>
-                            @foreach ($researchNotes as $note)
-                                <li>{{ $note }}</li>
-                            @endforeach
-                        </ul>
-                    </details>
-                @endif
+        @if ($sources->isNotEmpty())
+            <section class="saint-profile-block saint-profile-sources">
+                <details>
+                    <summary><h2>Sources</h2></summary>
+                    @foreach ($sources as $source)
+                        @if (filled($source['url'] ?? null))
+                            <p class="saint-profile-citation">
+                                <a href="{{ $source['url'] }}" target="_blank" rel="noreferrer">{{ $formatCitation($source) }}</a>
+                            </p>
+                        @else
+                            <p class="saint-profile-citation">{{ $formatCitation($source) }}</p>
+                        @endif
+                    @endforeach
+                </details>
+            </section>
+        @endif
+
+        @if ($researchNotes->isNotEmpty())
+            <section class="saint-profile-block saint-profile-sources">
+                <details>
+                    <summary><h2>Research Notes</h2></summary>
+                    <ul>
+                        @foreach ($researchNotes as $note)
+                            <li>{{ $note }}</li>
+                        @endforeach
+                    </ul>
+                </details>
             </section>
         @endif
     </section>

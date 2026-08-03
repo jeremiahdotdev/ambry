@@ -8,6 +8,7 @@
             $imageUrl = $generatedImageUrl ?? asset($hasImage ? $relativePath : $fallbackPath);
             $displayName = $saint->displayName();
             $biography = $saint->displayBiography();
+            $excerpt = filled($saint->profile_summary) ? strip_tags((string) $saint->profile_summary) : $biography;
             $lifeDates = $saint->displayLifeDates();
         @endphp
 
@@ -26,9 +27,9 @@
                             <span>{{ $lifeDates }}</span>
                         @endif
                     </span>
-                    @if ($biography)
+                    @if ($excerpt)
                     <span class="search-result-excerpt">
-                        <span class="search-result-excerpt-text">{{ \Illuminate\Support\Str::limit(\Illuminate\Support\Str::of($biography)->squish(), 250) }}</span>
+                        <span class="search-result-excerpt-text">{{ \Illuminate\Support\Str::limit(\Illuminate\Support\Str::of($excerpt)->squish(), 250) }}</span>
                         <span class="search-result-excerpt-overlay"></span>
                     </span>
                     @endif

@@ -543,6 +543,22 @@ class SaintDiscoveryTest extends TestCase
             ->assertDontSee('Bl. Adrian Fortescue');
     }
 
+    public function test_search_results_prefer_shortened_profile_summary_excerpt(): void
+    {
+        Saint::create([
+            'primary_name' => 'Saint Summary Result',
+            'slug' => 'saint-summary-result',
+            'canonical_status' => 'saint',
+            'biography' => 'Full biography text that should not appear on the search card.',
+            'profile_summary' => str_repeat('Profile summary sentence. ', 20),
+        ]);
+
+        $this->get('/search?q=Summary&type=saint')
+            ->assertOk()
+            ->assertSee(\Illuminate\Support\Str::limit(\Illuminate\Support\Str::of(str_repeat('Profile summary sentence. ', 20))->squish(), 250))
+            ->assertDontSee('Full biography text that should not appear on the search card.');
+    }
+
     public function test_search_results_are_paginated_ten_at_a_time(): void
     {
         foreach (range(1, 21) as $index) {

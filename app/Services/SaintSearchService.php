@@ -93,6 +93,7 @@ class SaintSearchService
             'biography_format_model',
             'biography_formatted_at',
             'biography_format_error',
+            'profile_summary',
             'birth_year',
             'birth_year_qualifier',
             'death_year',

@@ -19,7 +19,7 @@ class SearchController extends Controller
 
     private const POPULAR_SEARCHES = [
         'patron_saints' => [
-            'label' => 'Patron Saints',
+            'label' => 'Patrons',
             'icon' => 'shield-check',
         ],
         'martyrs' => [

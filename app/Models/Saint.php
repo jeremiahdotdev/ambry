@@ -206,6 +206,212 @@ class Saint extends Model
         ));
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function displayBiographySections(): array
+    {
+        return collect($this->biography_sections ?? [])
+            ->filter(fn ($section): bool => is_array($section) && (
+                filled($section['body'] ?? null)
+                || (($section['kind'] ?? null) === 'sources' && filled($section['pageSource']['url'] ?? null))
+            ))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function displayBiographySources(): array
+    {
+        return collect($this->biography_sources ?? [])
+            ->filter(fn ($source): bool => is_array($source) && filled($source['url'] ?? null))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function displayProfileSummaryParagraphs(): array
+    {
+        $summary = trim((string) $this->profile_summary);
+
+        if ($summary === '') {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map('trim', preg_split('/\R{2,}/u', $summary) ?: []),
+            fn (string $paragraph): bool => $paragraph !== '',
+        ));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function displayProfileRoles(): array
+    {
+        $roles = collect($this->profile_church_roles ?? [])
+            ->filter(fn ($role): bool => is_array($role) && filled($role['label'] ?? $role['role'] ?? null))
+            ->map(function (array $role): string {
+                $label = (string) ($role['label'] ?? $this->humanizeProfileLabel((string) ($role['role'] ?? '')));
+
+                return trim($label);
+            })
+            ->filter(fn (string $label): bool => $label !== '')
+            ->values();
+
+        if ($this->is_martyr && ! $roles->contains(fn (string $role): bool => strtolower($role) === 'martyr')) {
+            $roles->push('Martyr');
+        }
+
+        return $roles->all();
+    }
+
+    /**
+     * @return list<array{label: string, score: int}>
+     */
+    public function displayProfileTemperamentScores(): array
+    {
+        $temperaments = is_array($this->profile_temperaments ?? null) ? $this->profile_temperaments : [];
+        $scores = collect($temperaments['scores'] ?? [])
+            ->filter(fn ($score, $label): bool => filled($label) && is_numeric($score))
+            ->map(fn ($score): float => max(0, (float) $score));
+        $maxScore = (float) $scores->max();
+        $scale = $maxScore > 0 ? 75 / $maxScore : 0;
+
+        return $scores->map(function (float $score, string|int $label) use ($scale): array {
+            return [
+                'label' => $this->humanizeProfileLabel((string) $label),
+                'score' => max(0, min(75, (int) round($score * $scale))),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * @return list<array{name: string, summary: ?string}>
+     */
+    public function displayProfileVirtues(): array
+    {
+        return $this->displayProfileNamedSummaries($this->profile_key_virtues);
+    }
+
+    /**
+     * @return list<array{name: string, summary: ?string}>
+     */
+    public function displayProfileVices(): array
+    {
+        return $this->displayProfileNamedSummaries($this->profile_key_struggles);
+    }
+
+    /**
+     * @return list<array{name: string, date: ?string}>
+     */
+    public function displayProfileFeastDays(): array
+    {
+        return collect($this->profile_feast_days ?? [])
+            ->filter(fn ($item): bool => is_array($item) && filled($item['name'] ?? null))
+            ->map(function (array $item): array {
+                $recurrence = is_array($item['recurrence'] ?? null) ? $item['recurrence'] : [];
+
+                return [
+                    'name' => trim((string) $item['name']),
+                    'date' => $this->formatProfileFeastDate($recurrence),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{name: string, slug: ?string}>
+     */
+    public function displayProfileRelatedSaints(): array
+    {
+        return collect($this->profile_related_saints ?? [])
+            ->filter(fn ($item): bool => is_array($item) && filled($item['name'] ?? null))
+            ->map(fn (array $item): array => [
+                'name' => trim((string) $item['name']),
+                'slug' => filled($item['slug'] ?? null) ? trim((string) $item['slug']) : null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{name: string, description: ?string}>
+     */
+    public function displayProfileWorks(): array
+    {
+        return collect($this->profile_works ?? [])
+            ->filter(fn ($item): bool => is_array($item) && filled($item['name'] ?? null))
+            ->map(fn (array $item): array => [
+                'name' => trim((string) $item['name']),
+                'description' => filled($item['description'] ?? null) ? trim((string) $item['description']) : null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{name: string, location: ?string, description: ?string}>
+     */
+    public function displayProfileLandmarks(): array
+    {
+        return collect($this->profile_landmarks ?? [])
+            ->filter(fn ($item): bool => is_array($item) && filled($item['name'] ?? null))
+            ->map(fn (array $item): array => [
+                'name' => trim((string) $item['name']),
+                'location' => filled($item['location'] ?? null) ? trim((string) $item['location']) : null,
+                'description' => filled($item['description'] ?? null) ? trim((string) $item['description']) : null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function displayProfileResearchNotes(): array
+    {
+        return collect($this->profile_research_notes ?? [])
+            ->filter(fn ($item): bool => filled($item))
+            ->map(fn ($item): string => trim((string) $item))
+            ->filter(fn (string $note): bool => $note !== '')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{url: ?string, citation: string}>
+     */
+    public function displayProfileSources(): array
+    {
+        return collect($this->profile_sources ?? [])
+            ->filter(fn ($item): bool => is_array($item) && filled($item['title'] ?? null))
+            ->map(fn (array $item): array => [
+                'url' => filled($item['url'] ?? null) ? trim((string) $item['url']) : null,
+                'citation' => $this->formatProfileCitation($item),
+            ])
+            ->values()
+            ->all();
+    }
+
+    public function hasProfileEnrichment(): bool
+    {
+        return $this->displayProfileTemperamentScores() !== []
+            || $this->displayProfileVirtues() !== []
+            || $this->displayProfileVices() !== []
+            || $this->displayProfileFeastDays() !== []
+            || $this->displayProfileRelatedSaints() !== []
+            || $this->displayProfileWorks() !== []
+            || $this->displayProfileLandmarks() !== []
+            || $this->displayProfileSources() !== []
+            || $this->displayProfileResearchNotes() !== [];
+    }
+
     private function formatLifeYear(?int $year, ?string $qualifier): ?string
     {
         if (! $year) {
@@ -331,6 +537,72 @@ class Saint extends Model
         return strtolower(trim(preg_replace('/\s+/', ' ', $name) ?? $name));
     }
 
+    /**
+     * @return list<array{name: string, summary: ?string}>
+     */
+    private function displayProfileNamedSummaries(mixed $items): array
+    {
+        return collect($items ?? [])
+            ->filter(fn ($item): bool => is_array($item) && filled($item['name'] ?? null))
+            ->map(fn (array $item): array => [
+                'name' => $this->humanizeProfileLabel(trim((string) $item['name'])),
+                'summary' => filled($item['summary'] ?? null) ? trim((string) $item['summary']) : null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function humanizeProfileLabel(string $value): string
+    {
+        return Str::of($value)
+            ->replace('_', ' ')
+            ->title()
+            ->toString();
+    }
+
+    private function formatProfileFeastDate(array $recurrence): ?string
+    {
+        if (! filled($recurrence['month'] ?? null) || ! filled($recurrence['day'] ?? null)) {
+            return null;
+        }
+
+        $monthNames = [
+            1 => 'January',
+            2 => 'February',
+            3 => 'March',
+            4 => 'April',
+            5 => 'May',
+            6 => 'June',
+            7 => 'July',
+            8 => 'August',
+            9 => 'September',
+            10 => 'October',
+            11 => 'November',
+            12 => 'December',
+        ];
+
+        return ($monthNames[(int) $recurrence['month']] ?? (string) $recurrence['month']).' '.(int) $recurrence['day'];
+    }
+
+    private function formatProfileCitation(array $source): string
+    {
+        $isNewAdvent = ($source['source_type'] ?? null) === 'new_advent'
+            || str_contains((string) ($source['url'] ?? ''), 'newadvent.org');
+        $publisherOrAuthor = trim((string) ($source['publisher_or_author'] ?? ''));
+        $title = trim((string) ($source['title'] ?? ''));
+        $accessed = filled($source['accessed_date'] ?? null)
+            ? 'Accessed '.$source['accessed_date']
+            : 'Accessed '.now()->year;
+        $parts = collect([
+            filled($publisherOrAuthor) ? rtrim($publisherOrAuthor, '.') : null,
+            filled($title) ? '"'.rtrim($title, '.').'."' : null,
+            $isNewAdvent ? 'New Advent' : null,
+            $accessed,
+        ])->filter()->implode('. ');
+
+        return preg_replace('/\."\.\s+/', '." ', Str::finish($parts, '.')) ?? Str::finish($parts, '.');
+    }
+
     private static function stripLeadingHonorific(string $name): string
     {
         return trim(preg_replace('/^(?:(?:Pope|St\.?|Saint|Bl\.?|Blessed|Ven\.?|Venerable)\s+)+/iu', '', $name) ?? $name);
@@ -360,13 +632,4 @@ class Saint extends Model
             ->withTimestamps();
     }
 
-    public function outgoingRelationships(): HasMany
-    {
-        return $this->hasMany(Relationship::class, 'source_saint_id');
-    }
-
-    public function incomingRelationships(): HasMany
-    {
-        return $this->hasMany(Relationship::class, 'target_saint_id');
-    }
 }

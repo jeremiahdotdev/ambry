@@ -4,7 +4,7 @@
             $generatedImageUrl = $saint->image_thumb_url ?? \App\Support\GeneratedSaintImages::url($saint->slug, 'thumb');
             $relativePath = "saints/{$saint->slug}.png";
             $hasImage = file_exists(public_path($relativePath));
-            $fallbackPath = $saint->gender === 'female' ? 'saints/default_female.png' : 'saints/default.png';
+            $fallbackPath = 'saints/default.png';
             $imageUrl = $generatedImageUrl ?? asset($hasImage ? $relativePath : $fallbackPath);
             $displayName = $saint->displayName();
             $biography = $saint->displayBiography();

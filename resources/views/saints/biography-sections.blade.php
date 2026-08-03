@@ -1,14 +1,9 @@
 @php
-    $sections = collect($saint->biography_sections ?? [])
-        ->filter(fn ($section) => is_array($section) && (
-            filled($section['body'] ?? null)
-            || (($section['kind'] ?? null) === 'sources' && filled($section['pageSource']['url'] ?? null))
-        ));
-    $documentSources = collect($saint->biography_sources ?? [])
-        ->filter(fn ($source) => is_array($source) && filled($source['url'] ?? null));
+    $sections = $saint->displayBiographySections();
+    $documentSources = $saint->displayBiographySources();
 @endphp
 
-@if ($sections->isNotEmpty())
+@if ($sections !== [])
     <div class="saint-intro saint-biography-sections">
         @foreach ($sections as $section)
             <section class="saint-biography-section {{ ($section['kind'] ?? 'body') === 'sources' ? 'saint-biography-section--sources' : '' }}">

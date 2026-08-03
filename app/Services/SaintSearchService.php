@@ -124,7 +124,7 @@ class SaintSearchService
     private function applyPopularFilter(Builder $builder, string $filter): void
     {
         match ($filter) {
-            'patron_saints', 'patrons' => $builder->whereHas('patronages'),
+            'patrons' => $builder->whereHas('patronages'),
             'martyrs' => $this->whereBoolean($builder, 'is_martyr'),
             'men' => $builder->where('gender', 'male'),
             'women' => $builder->where('gender', 'female'),

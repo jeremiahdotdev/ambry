@@ -19,25 +19,15 @@
         </section>
     @endif
 
-    @php
-        $profileRoles = collect($saint->profile_church_roles ?? [])
-            ->filter(fn ($role) => is_array($role) && filled($role['label'] ?? $role['role'] ?? null))
-            ->map(fn ($role) => [
-                'label' => (string) ($role['label'] ?? \Illuminate\Support\Str::of((string) $role['role'])->replace('_', ' ')->title()),
-            ]);
+    @php($profileRoles = $saint->displayProfileRoles())
 
-        if ($saint->is_martyr && ! $profileRoles->contains(fn ($role) => strtolower($role['label']) === 'martyr')) {
-            $profileRoles->push(['label' => 'Martyr']);
-        }
-    @endphp
-
-    @if ($profileRoles->isNotEmpty())
+    @if ($profileRoles !== [])
         <section class="saint-patronages saint-profile-roles" aria-labelledby="saint-profile-roles-title">
             <h2 id="saint-profile-roles-title">Roles</h2>
             <ul>
                 @foreach ($profileRoles as $role)
                     <li>
-                        <span>{{ $role['label'] }}</span>
+                        <span>{{ $role }}</span>
                     </li>
                 @endforeach
             </ul>
@@ -47,13 +37,8 @@
     <span class="saint-divider"></span>
 
     @if (filled($saint->profile_summary))
-        @php
-            $profileSummaryParagraphs = collect(preg_split('/\R{2,}/u', trim((string) $saint->profile_summary)) ?: [])
-                ->map(fn ($paragraph) => trim($paragraph))
-                ->filter();
-        @endphp
         <div class="saint-intro saint-profile-summary">
-            @foreach ($profileSummaryParagraphs as $paragraph)
+            @foreach ($saint->displayProfileSummaryParagraphs() as $paragraph)
                 <p>{{ $paragraph }}</p>
             @endforeach
         </div>

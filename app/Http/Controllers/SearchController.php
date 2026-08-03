@@ -18,7 +18,7 @@ class SearchController extends Controller
     ];
 
     private const POPULAR_SEARCHES = [
-        'patron_saints' => [
+        'patrons' => [
             'label' => 'Patrons',
             'icon' => 'shield-check',
         ],
@@ -85,21 +85,12 @@ class SearchController extends Controller
         $rawType = (string) $request->query('type', 'saint');
         $selectedType = array_key_exists($rawType, self::SEARCH_TYPES) ? $rawType : 'saint';
 
-        logger()->debug('Search selected type', [
-            'raw_type' => $rawType,
-            'selected_type' => $selectedType,
-            'query' => $request->query('q'),
-            'path' => $request->path(),
-            'full_url' => $request->fullUrl(),
-        ]);
-
         return $selectedType;
     }
 
     private function selectedPopularSearch(Request $request): ?string
     {
         $popularSearch = (string) $request->query('popular', '');
-        $popularSearch = $popularSearch === 'patrons' ? 'patron_saints' : $popularSearch;
 
         return array_key_exists($popularSearch, self::POPULAR_SEARCHES) ? $popularSearch : null;
     }

@@ -149,14 +149,14 @@ class SaintDiscoveryTest extends TestCase
             'canonical_status' => 'saint',
         ]);
 
-        $this->get('/?popular=patron_saints')
+        $this->get('/?popular=patrons')
             ->assertOk()
             ->assertSee('Popular Filters')
             ->assertSee('aria-pressed="true"', false)
             ->assertSee('Patron Saints')
             ->assertDontSee('Patron Example');
 
-        $this->get('/search?type=saint&popular=patron_saints')
+        $this->get('/search?type=saint&popular=patrons')
             ->assertOk()
             ->assertSee('Back to search')
             ->assertSee('Patron Saints')
@@ -170,7 +170,7 @@ class SaintDiscoveryTest extends TestCase
             ->assertSee('Patron Example')
             ->assertSee('Unfiltered Example');
 
-        $this->get('/search?q=Example&type=saint&popular=patron_saints')
+        $this->get('/search?q=Example&type=saint&popular=patrons')
             ->assertOk()
             ->assertSee('Patron Example')
             ->assertDontSee('Saint Unfiltered Example');

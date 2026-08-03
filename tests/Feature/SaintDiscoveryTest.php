@@ -559,6 +559,33 @@ class SaintDiscoveryTest extends TestCase
             ->assertDontSee('Full biography text that should not appear on the search card.');
     }
 
+    public function test_search_results_mark_cards_without_patronages(): void
+    {
+        $patronage = Patronage::create([
+            'name' => 'Teachers',
+            'slug' => 'teachers',
+        ]);
+
+        $withPatronage = Saint::create([
+            'primary_name' => 'Saint Patronage Class',
+            'slug' => 'saint-patronage-class',
+            'canonical_status' => 'saint',
+        ]);
+
+        $withPatronage->patronages()->attach($patronage);
+
+        Saint::create([
+            'primary_name' => 'Saint No Patronage Class',
+            'slug' => 'saint-no-patronage-class',
+            'canonical_status' => 'saint',
+        ]);
+
+        $this->get('/search?q=Patronage%20Class&type=saint')
+            ->assertOk()
+            ->assertSee('search-result search-result--without-patronages', false)
+            ->assertSee('search-result-patronages', false);
+    }
+
     public function test_search_results_are_paginated_ten_at_a_time(): void
     {
         foreach (range(1, 21) as $index) {

@@ -10,9 +10,10 @@
             $biography = $saint->displayBiography();
             $excerpt = filled($saint->profile_summary) ? strip_tags((string) $saint->profile_summary) : $biography;
             $lifeDates = $saint->displayLifeDates();
+            $hasPatronages = $saint->patronages->isNotEmpty();
         @endphp
 
-        <article class="search-result">
+        <article class="search-result {{ $hasPatronages ? '' : 'search-result--without-patronages' }}">
             <a class="search-result-link" href="{{ route('saints.profile', $saint) }}">
                 <span class="search-result-image-wrapper">
                     <img class="search-result-image" src="{{ $imageUrl }}" alt="">
@@ -33,7 +34,7 @@
                         <span class="search-result-excerpt-overlay"></span>
                     </span>
                     @endif
-                    @if ($saint->patronages->isNotEmpty())
+                    @if ($hasPatronages)
                         <span class="search-result-patronages" aria-label="Patronages">
                             @foreach ($saint->patronages->take(3) as $patronage)
                                 <span>{{ $patronage->name }}</span>

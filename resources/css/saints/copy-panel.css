@@ -375,16 +375,28 @@
     margin: 0;
 }
 
-.saint-profile-location {
+.saint-profile-detail--landmark {
+    display: grid;
+    gap: 0.18rem;
+}
+
+.saint-profile-detail--landmark h4 {
+    margin: 0;
+}
+
+.saint-profile-detail--landmark > p:not(.saint-profile-location) {
+    margin-block-start: 0.16rem;
+}
+
+.saint-profile-detail .saint-profile-location {
     color: color-mix(in srgb, var(--saint-text, var(--color-foreground)) 62%, transparent);
     font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
-    font-size: 0.78rem;
+    font-size: 0.9rem;
     font-weight: 700;
-    line-height: 1.45;
 }
 
 .saint-profile-location + p {
-    margin-block-start: 0.28rem;
+    margin-block-start: 0.16rem;
 }
 
 .saint-profile-list {

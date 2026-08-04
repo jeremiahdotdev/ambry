@@ -10,6 +10,13 @@ use Illuminate\Support\Collection;
 
 class SaintSearchService
 {
+    private const TEMPERAMENTS = [
+        'choleric',
+        'melancholic',
+        'phlegmatic',
+        'sanguine',
+    ];
+
     /**
      * @return Collection<int, Saint>|LengthAwarePaginator<int, Saint>|Paginator<int, Saint>
      */
@@ -30,16 +37,17 @@ class SaintSearchService
         $driver = Saint::query()->getConnection()->getDriverName();
         $virtuesSearchColumn = $this->jsonSearchColumn('virtues', $driver);
         $vicesSearchColumn = $this->jsonSearchColumn('vices', $driver);
+        $temperament = $this->temperamentForSearchQuery($normalizedQuery);
 
         $search = Saint::query()
             ->select($this->resultColumns())
             ->with($with ?? ['aliases', 'feastDays', 'patronages', 'religiousOrders'])
             ->when($normalizedType !== '', fn (Builder $builder) => $builder->where('canonical_status', $normalizedType))
             ->when($normalizedPopular !== '', fn (Builder $builder) => $this->applyPopularFilter($builder, $normalizedPopular))
-            ->when($normalizedQuery !== '', function (Builder $builder) use ($normalizedQuery, $virtuesSearchColumn, $vicesSearchColumn, $includeBroadText): void {
+            ->when($normalizedQuery !== '', function (Builder $builder) use ($normalizedQuery, $virtuesSearchColumn, $vicesSearchColumn, $includeBroadText, $temperament, $driver): void {
                 $like = '%'.strtolower($normalizedQuery).'%';
 
-                $builder->where(function (Builder $query) use ($like, $virtuesSearchColumn, $vicesSearchColumn, $includeBroadText): void {
+                $builder->where(function (Builder $query) use ($like, $virtuesSearchColumn, $vicesSearchColumn, $includeBroadText, $temperament, $driver): void {
                     $query
                         ->whereRaw('lower(primary_name) like ?', [$like])
                         ->when($includeBroadText, function (Builder $query) use ($like, $virtuesSearchColumn, $vicesSearchColumn): void {
@@ -55,7 +63,10 @@ class SaintSearchService
                                     ->orWhereRaw('lower(slug) like ?', [$like])
                                     ->when($includeBroadText, fn (Builder $query) => $query->orWhereRaw("lower(coalesce(description, '')) like ?", [$like]));
                             });
-                        });
+                        })
+                        ->when($temperament !== null, fn (Builder $query) => $query->orWhere(
+                            fn (Builder $temperaments) => $this->whereTopTemperament($temperaments, $temperament, $driver)
+                        ));
                 });
             })
             ->when($patronage, fn (Builder $builder) => $builder->whereHas(
@@ -143,6 +154,52 @@ class SaintSearchService
         }
 
         $builder->where($column, true);
+    }
+
+    private function whereTopTemperament(Builder $builder, string $temperament, string $driver): void
+    {
+        $primaryExpression = $this->profileTemperamentPrimaryExpression($driver);
+        $targetScoreExpression = $this->profileTemperamentScoreExpression($temperament, $driver);
+        $otherScoreExpressions = collect(self::TEMPERAMENTS)
+            ->reject(fn (string $candidate): bool => $candidate === $temperament)
+            ->map(fn (string $candidate): string => $this->profileTemperamentScoreExpression($candidate, $driver));
+
+        $builder->whereRaw("lower(coalesce({$primaryExpression}, '')) = ?", [$temperament])
+            ->orWhere(function (Builder $query) use ($primaryExpression, $targetScoreExpression, $otherScoreExpressions): void {
+                $query
+                    ->whereRaw("coalesce({$primaryExpression}, '') = ''")
+                    ->whereRaw("{$targetScoreExpression} is not null")
+                    ->whereRaw(
+                        $otherScoreExpressions
+                            ->map(fn (string $scoreExpression): string => "{$targetScoreExpression} >= coalesce({$scoreExpression}, 0)")
+                            ->implode(' and ')
+                    );
+            });
+    }
+
+    private function temperamentForSearchQuery(string $query): ?string
+    {
+        $normalized = strtolower(str_replace([' ', '-'], '_', trim($query)));
+
+        return in_array($normalized, self::TEMPERAMENTS, true) ? $normalized : null;
+    }
+
+    private function profileTemperamentPrimaryExpression(string $driver): string
+    {
+        return match ($driver) {
+            'pgsql' => "profile_temperaments->>'primary'",
+            'mysql', 'mariadb' => "json_unquote(json_extract(profile_temperaments, '$.primary'))",
+            default => "json_extract(profile_temperaments, '$.primary')",
+        };
+    }
+
+    private function profileTemperamentScoreExpression(string $temperament, string $driver): string
+    {
+        return match ($driver) {
+            'pgsql' => "nullif(profile_temperaments->'scores'->>'{$temperament}', '')::double precision",
+            'mysql', 'mariadb' => "cast(json_unquote(json_extract(profile_temperaments, '$.scores.{$temperament}')) as decimal(10, 4))",
+            default => "cast(json_extract(profile_temperaments, '$.scores.{$temperament}') as real)",
+        };
     }
 
     private function jsonSearchColumn(string $column, string $driver): string

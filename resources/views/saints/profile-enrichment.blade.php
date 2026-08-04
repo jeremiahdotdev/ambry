@@ -107,7 +107,7 @@
             <section class="saint-profile-block">
                 <h2>Landmarks</h2>
                 @foreach ($landmarks as $landmark)
-                    <article class="saint-profile-detail">
+                    <article class="saint-profile-detail saint-profile-detail--landmark">
                         <h4>{{ $landmark['name'] }}</h4>
                         @if (filled($landmark['location'] ?? null))
                             <p class="saint-profile-location">{{ $landmark['location'] }}</p>

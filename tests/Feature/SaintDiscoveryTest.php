@@ -108,6 +108,50 @@ class SaintDiscoveryTest extends TestCase
             ->assertDontSee('Saint Augustine');
     }
 
+    public function test_searching_temperament_name_returns_saints_with_that_top_temperament(): void
+    {
+        Saint::create([
+            'primary_name' => 'Saint Explicit Sanguine',
+            'slug' => 'saint-explicit-sanguine',
+            'profile_temperaments' => [
+                'primary' => 'sanguine',
+                'scores' => [
+                    'choleric' => 10,
+                    'sanguine' => 4,
+                ],
+            ],
+        ]);
+
+        Saint::create([
+            'primary_name' => 'Saint Scored Sanguine',
+            'slug' => 'saint-scored-sanguine',
+            'profile_temperaments' => [
+                'scores' => [
+                    'melancholic' => 2,
+                    'sanguine' => 8,
+                    'phlegmatic' => 5,
+                ],
+            ],
+        ]);
+
+        Saint::create([
+            'primary_name' => 'Saint Secondary Tempered',
+            'slug' => 'saint-secondary-tempered',
+            'profile_temperaments' => [
+                'scores' => [
+                    'choleric' => 9,
+                    'sanguine' => 3,
+                ],
+            ],
+        ]);
+
+        $this->get('/search?q=sanguine')
+            ->assertOk()
+            ->assertSee('Explicit Sanguine')
+            ->assertSee('Scored Sanguine')
+            ->assertDontSee('Secondary Tempered');
+    }
+
     public function test_popular_filters_render_on_the_first_page_and_filter_searches(): void
     {
         $patron = Saint::create([

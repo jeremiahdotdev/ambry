@@ -33,7 +33,7 @@ type ServerOptions struct {
 
 func NewServer(opts ServerOptions) Server {
 	mux := http.NewServeMux()
-	humaConfig := huma.DefaultConfig("Ambry Saints API", "1.0.0")
+	humaConfig := huma.DefaultConfig("✣ Ambry API", "1.0.0")
 	humaConfig.Info.Description = "Read-only API for the existing Ambry Catholic saints PostgreSQL database."
 	humaConfig.DocsPath = "/"
 	humaConfig.Servers = []*huma.Server{{URL: "/"}}

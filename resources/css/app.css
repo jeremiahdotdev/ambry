@@ -112,7 +112,6 @@ label {
 input,
 select,
 button {
-    min-height: 48px;
     border-radius: 6px;
     font: inherit;
 }

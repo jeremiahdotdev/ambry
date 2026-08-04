@@ -75,6 +75,26 @@ func TestRuntimeRestoresOriginalVercelRoute(t *testing.T) {
 	}
 }
 
+func TestRuntimeRestoresRootVercelRoute(t *testing.T) {
+	rt := newRuntime()
+	rt.build = func(context.Context, config.Config) (http.Handler, error) {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/" {
+				t.Fatalf("expected restored path /, got %q", r.URL.Path)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		}), nil
+	}
+	t.Setenv("DATABASE_URL", "postgres://example")
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/index?route=/", nil)
+	rt.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d", rec.Code)
+	}
+}
+
 func TestRuntimeRestoresRouteAndPreservesRealQueryParams(t *testing.T) {
 	rt := newRuntime()
 	rt.build = func(context.Context, config.Config) (http.Handler, error) {

@@ -26,7 +26,9 @@ func middlewareChain(next http.Handler, cfg config.Config, logger *slog.Logger, 
 				requestTimeout(cfg.RequestTimeout)(
 					requestLogger(logger)(
 						requestID(
-							apiKeyAuth(authenticator, logger)(next),
+							knownRouteGuard(
+								apiKeyAuth(authenticator, logger)(next),
+							),
 						),
 					),
 				),
@@ -99,6 +101,22 @@ func requestTimeout(timeout time.Duration) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.TimeoutHandler(next, timeout, "request timed out")
 	}
+}
+
+func knownRouteGuard(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		if path == "/" ||
+			path == "/health" ||
+			path == "/openapi.json" ||
+			path == "/openapi.yaml" ||
+			strings.HasPrefix(path, "/api/v1/") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		http.NotFound(w, r)
+	})
 }
 
 func apiKeyAuth(authenticator auth.Authenticator, logger *slog.Logger) func(http.Handler) http.Handler {

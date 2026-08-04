@@ -6,7 +6,7 @@ Read-only Go REST API app for the existing Ambry Catholic saints PostgreSQL data
 
 - Go 1.24+
 - Standard `net/http`
-- Huma v2 with `humago` for routing, validation, OpenAPI, and `/docs`
+- Huma v2 with `humago` for routing, validation, OpenAPI, and docs at `/`
 - `pgx/v5` connection pooling
 - SQL query files and `sqlc.yaml` for sqlc generation
 - `log/slog` structured logging
@@ -58,11 +58,11 @@ Unresolved mappings:
 
 Documentation:
 
-- `GET /docs`
+- `GET /`
 - `GET /openapi.json`
 - `GET /openapi.yaml`
 
-All `/api/v1/*` routes require a developer API key created by the Laravel web app. Public routes are limited to `/health`, `/docs`, `/openapi.json`, and `/openapi.yaml`.
+All `/api/v1/*` routes require a developer API key created by the Laravel web app. Public routes are limited to `/health`, `/`, `/openapi.json`, and `/openapi.yaml`.
 
 ## Configuration
 
@@ -138,7 +138,7 @@ It lazily initializes the shared application handler once per warm function inst
 - `/api/v1/patronages`
 - `/api/v1/religious-orders`
 - `/api/v1/feast-days`
-- `/docs`
+- `/`
 - `/openapi.json`
 - `/openapi.yaml`
 
@@ -153,7 +153,7 @@ Deployment steps:
 7. Keep serverless pool settings small, for example `DATABASE_MAX_CONNECTIONS=3` and `DATABASE_MIN_CONNECTIONS=0`.
 8. Deploy.
 9. Verify `https://your-domain/health`.
-10. Open `https://your-domain/docs`.
+10. Open `https://your-domain/`.
 11. Open `https://your-domain/openapi.json`.
 
 The API does not run migrations during Vercel request execution. Run database migrations separately through the owning Laravel app, a CI job, or an administrative migration command pointed at the intended database.

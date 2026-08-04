@@ -2,12 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/health",
-      "destination": "/api/index?route=/health"
+      "source": "/",
+      "destination": "/api/index?route=/"
     },
     {
-      "source": "/docs",
-      "destination": "/api/index?route=/docs"
+      "source": "/health",
+      "destination": "/api/index?route=/health"
     },
     {
       "source": "/openapi.json",

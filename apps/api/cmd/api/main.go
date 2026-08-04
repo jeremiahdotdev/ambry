@@ -39,7 +39,7 @@ func main() {
 
 	errs := make(chan error, 1)
 	go func() {
-		application.Logger.Info("api server listening", "addr", httpServer.Addr, "docs", "/docs")
+		application.Logger.Info("api server listening", "addr", httpServer.Addr, "docs", "/")
 		errs <- httpServer.ListenAndServe()
 	}()
 

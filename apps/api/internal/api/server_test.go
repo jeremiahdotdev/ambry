@@ -59,13 +59,23 @@ func TestHealthDatabaseFailure(t *testing.T) {
 
 func TestOpenAPIAndDocsRoutes(t *testing.T) {
 	server := testServer(okHealth{})
-	for _, path := range []string{"/docs", "/openapi.json", "/openapi.yaml"} {
+	for _, path := range []string{"/", "/openapi.json", "/openapi.yaml"} {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		server.Handler.ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("expected 200 for %s, got %d", path, rec.Code)
 		}
+	}
+}
+
+func TestDocsRouteRemoved(t *testing.T) {
+	server := testServer(okHealth{})
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/docs", nil)
+	server.Handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", rec.Code)
 	}
 }
 

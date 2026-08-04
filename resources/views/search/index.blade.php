@@ -38,8 +38,13 @@
                 <span class="search-star search-star-b">✦</span>
                 <span class="search-star search-star-c">✦</span>
                 <span class="search-star search-star-d">✦</span>
+                <span class="search-star search-star-e">✦</span>
+                <span class="search-star search-star-f">✦</span>
+                <span class="search-star search-star-g">✦</span>
+                <span class="search-star search-star-h">✦</span>
                 <div class="search-crest">
-                    <span>✣</span>
+                    <span class="search-crest-main">✧</span>
+                    <span class="search-crest-center">✦</span>
                 </div>
             </div>
 

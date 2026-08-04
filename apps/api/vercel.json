@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": "/api"
+    },
+    {
+      "source": "/docs",
+      "destination": "/api"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "/api"
+    },
+    {
+      "source": "/openapi.yaml",
+      "destination": "/api"
+    },
+    {
+      "source": "/api/v1/(.*)",
+      "destination": "/api"
+    }
+  ]
+}

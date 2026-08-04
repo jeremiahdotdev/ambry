@@ -6,20 +6,24 @@
         "node": "22.x"
     },
     "scripts": {
-        "build": "vite build",
-        "dev": "vite"
+        "build": "pnpm --dir apps/web build",
+        "dev": "concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74,#86efac\" \"cd apps/web && php artisan serve\" \"cd apps/web && php artisan queue:listen --tries=1 --timeout=0\" \"cd apps/web && php artisan pail --timeout=0\" \"pnpm --dir apps/web dev\" \"bash scripts/dev-api.sh --optional\" --names=server,queue,logs,vite,api --kill-others",
+        "dev:vite": "pnpm --dir apps/web dev",
+        "dev:api": "bash scripts/dev-api.sh",
+        "test": "pnpm --dir apps/web test",
+        "test:api": "cd apps/api && go test ./..."
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^3.1",
-        "tailwindcss": "^4.0.0",
-        "vercel-php": "^0.9.0",
-        "vite": "^8.0.0"
+        "concurrently": "^9.0.1"
     },
-    "dependencies": {
-        "@vercel/blob": "^2.6.1",
-        "lucide": "^1.27.0"
+    "pnpm": {
+        "packageExtensions": {
+            "vite-plugin-full-reload@*": {
+                "peerDependencies": {
+                    "vite": "*"
+                }
+            }
+        }
     },
     "packageManager": "pnpm@10.26.0+sha512.3b3f6c725ebe712506c0ab1ad4133cf86b1f4b687effce62a9b38b4d72e3954242e643190fc51fa1642949c735f403debd44f5cb0edd657abe63a8b6a7e1e402"
 }

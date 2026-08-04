@@ -1,0 +1,35 @@
+services:
+  api:
+    build: .
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://ambry:ambry@postgres:5432/ambry?sslmode=disable}
+      PORT: ${PORT:-8080}
+      DATABASE_MAX_CONNECTIONS: ${DATABASE_MAX_CONNECTIONS:-3}
+      DATABASE_MIN_CONNECTIONS: ${DATABASE_MIN_CONNECTIONS:-0}
+    ports:
+      - "${PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ambry
+      POSTGRES_USER: ambry
+      POSTGRES_PASSWORD: ambry
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/schema/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ambry -d ambry"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:

@@ -1,0 +1,80 @@
+package app
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jeremiahdotdev/ambry/apps/api/internal/api"
+	"github.com/jeremiahdotdev/ambry/apps/api/internal/auth"
+	"github.com/jeremiahdotdev/ambry/apps/api/internal/config"
+	"github.com/jeremiahdotdev/ambry/apps/api/internal/database"
+	"github.com/jeremiahdotdev/ambry/apps/api/internal/feastday"
+	"github.com/jeremiahdotdev/ambry/apps/api/internal/patronage"
+	"github.com/jeremiahdotdev/ambry/apps/api/internal/religiousorder"
+	"github.com/jeremiahdotdev/ambry/apps/api/internal/saint"
+)
+
+type App struct {
+	Handler http.Handler
+	Logger  *slog.Logger
+	pool    *pgxpool.Pool
+}
+
+func New(ctx context.Context, cfg config.Config) (*App, error) {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
+	pool, err := database.NewPostgresPool(ctx, cfg)
+	if err != nil {
+		logger.Error("database pool initialization failed", "error", err)
+		return nil, err
+	}
+
+	saintRepo := saint.NewPostgresRepository(pool, cfg.QueryTimeout)
+	patronageRepo := patronage.NewPostgresRepository(pool, cfg.QueryTimeout)
+	orderRepo := religiousorder.NewPostgresRepository(pool, cfg.QueryTimeout)
+	feastDayRepo := feastday.NewPostgresRepository(pool, cfg.QueryTimeout)
+
+	server := api.NewServer(api.ServerOptions{
+		Config:                cfg,
+		Logger:                logger,
+		Health:                database.NewHealthChecker(pool, cfg.QueryTimeout),
+		Saints:                saint.NewService(saintRepo),
+		Patronages:            patronage.NewService(patronageRepo),
+		ReligiousOrders:       religiousorder.NewService(orderRepo),
+		FeastDays:             feastday.NewService(feastDayRepo),
+		Authenticator:          auth.NewPostgresAuthenticator(pool, cfg.QueryTimeout),
+	})
+
+	return &App{Handler: server.Handler, Logger: logger, pool: pool}, nil
+}
+
+func NewFromEnvironment(ctx context.Context) (*App, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, err
+	}
+	initCtx, cancel := context.WithTimeout(ctx, cfg.DatabaseConnectTimeout)
+	defer cancel()
+	return New(initCtx, cfg)
+}
+
+func NewHandler(ctx context.Context, cfg config.Config) (http.Handler, error) {
+	application, err := New(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return application.Handler, nil
+}
+
+func (a *App) Close() {
+	if a != nil && a.pool != nil {
+		a.pool.Close()
+	}
+}
+
+func InitContext(timeout time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), timeout)
+}

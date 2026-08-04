@@ -11,9 +11,29 @@
             $excerpt = filled($saint->profile_summary) ? strip_tags((string) $saint->profile_summary) : $biography;
             $lifeDates = $saint->displayLifeDates();
             $hasPatronages = $saint->patronages->isNotEmpty();
+            $primaryTemperament = $saint->displayProfilePrimaryTemperament();
+            $primaryTemperamentClass = $primaryTemperament
+                ? 'search-result-indicator--'.\Illuminate\Support\Str::slug($primaryTemperament)
+                : null;
         @endphp
 
         <article class="search-result {{ $hasPatronages ? '' : 'search-result--without-patronages' }}">
+            @if ($saint->is_martyr || $primaryTemperament)
+                <span class="search-result-indicators">
+                    @if ($saint->is_martyr)
+                    <button class="search-result-indicator search-result-indicator--martyr" type="button" aria-label="martyr" data-search-result-indicator>
+                        <i data-lucide="flame" aria-hidden="true"></i>
+                        <span class="search-result-indicator-popover" role="tooltip">martyr</span>
+                    </button>
+                    @endif
+                    @if ($primaryTemperament)
+                        <button class="search-result-indicator search-result-indicator--temperament {{ $primaryTemperamentClass }}" type="button" aria-label="temperament: {{ $primaryTemperament }}" data-search-result-indicator>
+                            <i data-lucide="sparkles" aria-hidden="true"></i>
+                            <span class="search-result-indicator-popover" role="tooltip">{{ $primaryTemperament }}</span>
+                        </button>
+                    @endif
+                </span>
+            @endif
             <a class="search-result-link" href="{{ route('saints.profile', $saint) }}">
                 <span class="search-result-image-wrapper">
                     <img class="search-result-image" src="{{ $imageUrl }}" alt="">

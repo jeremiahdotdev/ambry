@@ -290,6 +290,29 @@ class Saint extends Model
         })->values()->all();
     }
 
+    public function displayProfilePrimaryTemperament(): ?string
+    {
+        $temperaments = is_array($this->profile_temperaments ?? null) ? $this->profile_temperaments : [];
+
+        if (filled($temperaments['primary'] ?? null)) {
+            $primary = $this->humanizeProfileLabel((string) $temperaments['primary']);
+
+            return in_array(strtolower($primary), ['indeterminate', 'indeterminent'], true) ? null : $primary;
+        }
+
+        $scores = collect($temperaments['scores'] ?? [])
+            ->filter(fn ($score, $label): bool => filled($label) && is_numeric($score))
+            ->map(fn ($score): float => max(0, (float) $score));
+
+        if ($scores->isEmpty()) {
+            return null;
+        }
+
+        $primary = $this->humanizeProfileLabel((string) $scores->sortDesc()->keys()->first());
+
+        return in_array(strtolower($primary), ['indeterminate', 'indeterminent'], true) ? null : $primary;
+    }
+
     /**
      * @return list<array{name: string, summary: ?string}>
      */

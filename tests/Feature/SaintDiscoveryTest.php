@@ -559,6 +559,60 @@ class SaintDiscoveryTest extends TestCase
             ->assertDontSee('Full biography text that should not appear on the search card.');
     }
 
+    public function test_search_results_show_martyr_flame_marker(): void
+    {
+        Saint::create([
+            'primary_name' => 'Saint Martyr Marker',
+            'slug' => 'saint-martyr-marker',
+            'canonical_status' => 'saint',
+            'is_martyr' => true,
+            'profile_temperaments' => [
+                'scores' => [
+                    'melancholic' => 2,
+                    'sanguine' => 6,
+                ],
+            ],
+        ]);
+
+        Saint::create([
+            'primary_name' => 'Saint Peaceful Marker',
+            'slug' => 'saint-peaceful-marker',
+            'canonical_status' => 'saint',
+            'is_martyr' => false,
+        ]);
+
+        $this->get('/search?q=Marker&type=saint')
+            ->assertOk()
+            ->assertSee('search-result-indicator--martyr', false)
+            ->assertSee('search-result-indicator--temperament', false)
+            ->assertSee('search-result-indicator--sanguine', false)
+            ->assertSee('martyr')
+            ->assertSee('Sanguine')
+            ->assertDontSee('is martyr')
+            ->assertSee('Martyr Marker')
+            ->assertSee('Peaceful Marker');
+    }
+
+    public function test_search_results_do_not_show_indeterminate_temperament_marker(): void
+    {
+        Saint::create([
+            'primary_name' => 'Saint Indeterminate Marker',
+            'slug' => 'saint-indeterminate-marker',
+            'canonical_status' => 'saint',
+            'profile_temperaments' => [
+                'primary' => 'indeterminate',
+                'scores' => [
+                    'indeterminate' => 10,
+                ],
+            ],
+        ]);
+
+        $this->get('/search?q=Indeterminate&type=saint')
+            ->assertOk()
+            ->assertSee('Indeterminate Marker')
+            ->assertDontSee('search-result-indicator--temperament', false);
+    }
+
     public function test_search_results_mark_cards_without_patronages(): void
     {
         $patronage = Patronage::create([

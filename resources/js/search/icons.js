@@ -1,4 +1,4 @@
-import { ArrowRight, Flame, GraduationCap, Mars, ShieldCheck, Venus, createIcons } from 'lucide';
+import { ArrowRight, Flame, GraduationCap, Mars, ShieldCheck, Sparkles, Venus, createIcons } from 'lucide';
 
 export function mountSearchIcons() {
     createIcons({
@@ -8,6 +8,7 @@ export function mountSearchIcons() {
             GraduationCap,
             Mars,
             ShieldCheck,
+            Sparkles,
             Venus,
         },
     });

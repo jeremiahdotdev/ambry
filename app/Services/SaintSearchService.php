@@ -94,6 +94,7 @@ class SaintSearchService
             'biography_formatted_at',
             'biography_format_error',
             'profile_summary',
+            'profile_temperaments',
             'birth_year',
             'birth_year_qualifier',
             'death_year',

@@ -9,7 +9,7 @@
         'resources/css/app.css',
         'resources/css/saints/index.css',
         'resources/css/saints/profile.css',
-        'resources/css/shared/circles/bisected.css',
+        'resources/css/components/circles/bisected.css',
         'resources/css/saints/image-block.css',
         'resources/css/saints/copy-panel.css',
         'resources/css/saints/title-block.css',

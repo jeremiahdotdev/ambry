@@ -1,0 +1,219 @@
+.developer-page {
+    justify-content: flex-start;
+    padding-bottom: 3rem;
+}
+
+.developer-shell {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    width: min(100%, 64rem);
+    gap: 1.25rem;
+    padding-block-start: 2rem;
+    text-align: left;
+}
+
+.developer-hero,
+.developer-section-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.developer-hero h1 {
+    color: #401b3f;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(2.4rem, 8vw, 4.75rem);
+    font-weight: 500;
+}
+
+.developer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.developer-docs-link {
+    flex: 0 0 auto;
+    border: 1px solid #d8a052;
+    border-radius: 6px;
+    color: #42183d;
+    font-weight: 800;
+    padding: 0.7rem 0.9rem;
+    text-decoration: none;
+}
+
+.developer-logout-link {
+    color: #42183d;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.developer-logout-link:hover,
+.developer-logout-link:focus-visible {
+    text-decoration: underline;
+}
+
+.developer-alert,
+.developer-token,
+.developer-panel {
+    border: 1px solid rgb(255 255 255 / 84%);
+    border-radius: 6px;
+    background: rgb(255 255 255 / 86%);
+    box-shadow:
+        0 1rem 2rem rgb(73 40 34 / 8%),
+        inset 0 1px 0 rgb(255 255 255 / 90%);
+    padding: 1.25rem;
+}
+
+.developer-alert-success {
+    border-color: #9bc8b6;
+    background: #effaf5;
+    color: #23624e;
+}
+
+.developer-token {
+    border-color: #d8a052;
+    background: #fff8e8;
+}
+
+.developer-token h2,
+.developer-panel h2 {
+    color: #42183d;
+    font-size: 1.2rem;
+}
+
+.developer-token p {
+    margin: 0.35rem 0 0.8rem;
+    color: #6f5870;
+}
+
+.developer-token code,
+.developer-key code {
+    display: inline-block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    color: #401b3f;
+    font-size: 0.92rem;
+}
+
+.developer-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.45fr) auto;
+    align-items: end;
+    gap: 0.8rem;
+    margin-block-start: 1rem;
+}
+
+.developer-section-heading span {
+    color: #6f5870;
+    font-size: 0.92rem;
+    font-weight: 800;
+}
+
+.developer-key-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-block-start: 1rem;
+}
+
+.developer-key {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) minmax(18rem, 1.4fr) auto;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid #eadbc6;
+    border-radius: 6px;
+    background: #fffaf0;
+    padding: 1rem;
+}
+
+.developer-key h3,
+.developer-key p,
+.developer-key dl {
+    margin: 0;
+}
+
+.developer-key h3 {
+    color: #2f1b31;
+    font-size: 1rem;
+}
+
+.developer-key p {
+    margin-block-start: 0.25rem;
+}
+
+.developer-key dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.developer-key dt {
+    color: #6f5870;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.developer-key dd {
+    margin: 0.15rem 0 0;
+    color: #2f1b31;
+}
+
+.developer-status {
+    display: inline-flex;
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.developer-status-active {
+    background: #e7f6ef;
+    color: #23624e;
+}
+
+.developer-status-expired {
+    background: #f3eee7;
+    color: #6f5870;
+}
+
+.developer-status-revoked {
+    background: #fff1f1;
+    color: #8a1f1f;
+}
+
+.developer-danger-button {
+    background: #8a1f1f;
+}
+
+@media (max-width: 820px) {
+    .developer-form,
+    .developer-key,
+    .developer-key dl {
+        grid-template-columns: 1fr;
+    }
+
+    .developer-hero,
+    .developer-section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .developer-actions {
+        align-items: stretch;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .developer-docs-link,
+    .developer-form .form-button,
+    .developer-danger-button {
+        width: 100%;
+        text-align: center;
+    }
+}

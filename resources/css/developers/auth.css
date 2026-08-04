@@ -1,0 +1,71 @@
+.developer-auth-page {
+    justify-content: center;
+    padding-bottom: 3rem;
+}
+
+.developer-auth-panel {
+    position: relative;
+    z-index: 2;
+    width: min(100%, 34rem);
+    margin-block: 2rem;
+    border: 1px solid rgb(255 255 255 / 84%);
+    border-radius: 6px;
+    background: rgb(255 255 255 / 86%);
+    box-shadow:
+        0 1rem 2rem rgb(73 40 34 / 8%),
+        inset 0 1px 0 rgb(255 255 255 / 90%);
+    padding: 1.25rem;
+    text-align: left;
+}
+
+.developer-auth-panel .eyebrow,
+.developer-auth-panel h1 {
+    text-align: center;
+}
+
+.developer-auth-panel h1 {
+    color: #401b3f;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(2.4rem, 8vw, 4.75rem);
+    font-weight: 500;
+}
+
+.developer-auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    margin-block-start: 1rem;
+}
+
+.developer-auth-checkbox {
+    position: static;
+    display: flex;
+    align-items: center;
+    width: auto;
+    height: auto;
+    gap: 0.5rem;
+    clip: auto;
+    color: #5f4c61;
+    font-size: 0.92rem;
+    font-weight: 700;
+    overflow: visible;
+    white-space: normal;
+}
+
+.developer-auth-checkbox input {
+    width: 1rem;
+}
+
+.developer-auth-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-block-start: 1rem;
+    color: #5f4c61;
+    font-size: 0.92rem;
+}
+
+.developer-auth-footer a {
+    font-weight: 800;
+    text-decoration: none;
+}

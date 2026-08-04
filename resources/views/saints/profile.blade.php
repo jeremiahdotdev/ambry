@@ -14,7 +14,7 @@
     data-saint-variant="{{ $variant }}"
     style="--saint-page-start: {{ $scheme['pageStart'] }}; --saint-page-mid: {{ $scheme['pageMid'] }}; --saint-page-end: {{ $scheme['pageEnd'] }}; --saint-card: {{ $scheme['card'] }}; --saint-border: {{ $scheme['border'] }}; --saint-text: {{ $scheme['text'] }}; --saint-accent: {{ $scheme['accent'] }}; --saint-backdrop: {{ $scheme['backdrop'] }};"
 >
-    @include('shared.back-to-search', ['class' => 'saint-backlink'])
+    @include('components.back-to-search', ['class' => 'saint-backlink'])
 
     @foreach ($layout['circles'] as $circle)
         @php
@@ -23,7 +23,7 @@
                 $circle['second'] = $scheme['circles'][($loop->index + 1) % count($scheme['circles'])];
             }
         @endphp
-        @include('shared.circles.bisected', [
+        @include('components.circles.bisected', [
             'size' => $circle['size'],
             'cssSize' => $circle['cssSize'],
             'x' => $circle['x'],

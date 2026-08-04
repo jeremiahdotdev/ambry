@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/app"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/config"
+	"api/internal/app"
+	"api/internal/config"
 )
 
 func main() {

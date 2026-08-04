@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"api/internal/database"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/database"
 )
 
 type PostgresRepository struct {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
+	"api/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/config"
 )
 
 func NewPostgresPool(ctx context.Context, cfg config.Config) (*pgxpool.Pool, error) {

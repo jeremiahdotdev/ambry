@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
+	"api/internal/saint"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/saint"
 )
 
 type PostgresRepository struct {

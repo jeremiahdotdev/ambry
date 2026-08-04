@@ -1,6 +1,6 @@
 package saint
 
-import "github.com/jeremiahdotdev/ambry/apps/api/internal/database"
+import "api/internal/database"
 
 type FeastDay struct {
 	Month int    `json:"month" doc:"Feast month, 1 through 12." example:"3"`
@@ -44,16 +44,16 @@ type Location struct {
 }
 
 type SearchFilters struct {
-	Query       string
-	Type        string
-	Patronage   string
-	Order       string
-	FeastMonth  int
-	FeastDay    int
-	Page        int
-	PerPage     int
-	Sort        string
-	Direction   string
+	Query      string
+	Type       string
+	Patronage  string
+	Order      string
+	FeastMonth int
+	FeastDay   int
+	Page       int
+	PerPage    int
+	Sort       string
+	Direction  string
 }
 
 type SearchPage struct {

@@ -4,15 +4,15 @@ import (
 	"log/slog"
 	"net/http"
 
+	"api/internal/auth"
+	"api/internal/config"
+	"api/internal/database"
+	"api/internal/feastday"
+	"api/internal/patronage"
+	"api/internal/religiousorder"
+	"api/internal/saint"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/auth"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/config"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/database"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/feastday"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/patronage"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/religiousorder"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/saint"
 )
 
 type Server struct {

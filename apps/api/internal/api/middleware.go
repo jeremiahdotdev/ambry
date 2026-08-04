@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/auth"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/config"
+	"api/internal/auth"
+	"api/internal/config"
 )
 
 type contextKey string

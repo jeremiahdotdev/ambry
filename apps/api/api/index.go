@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/app"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/config"
+	"api/internal/app"
+	"api/internal/config"
 )
 
 var defaultRuntime = newRuntime()
@@ -46,6 +47,7 @@ func (rt *runtime) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeServiceUnavailable(w)
 		return
 	}
+	restoreOriginalRoute(r)
 	handler.ServeHTTP(w, r)
 }
 
@@ -84,4 +86,21 @@ func writeServiceUnavailable(w http.ResponseWriter) {
 			"details": nil,
 		},
 	})
+}
+
+func restoreOriginalRoute(r *http.Request) {
+	query := r.URL.Query()
+	route := query.Get("route")
+	if route == "" {
+		return
+	}
+	if !strings.HasPrefix(route, "/") {
+		route = "/" + route
+	}
+
+	r.URL.Path = route
+	r.URL.RawPath = ""
+
+	query.Del("route")
+	r.URL.RawQuery = query.Encode()
 }

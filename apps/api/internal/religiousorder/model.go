@@ -1,6 +1,6 @@
 package religiousorder
 
-import "github.com/jeremiahdotdev/ambry/apps/api/internal/database"
+import "api/internal/database"
 
 type ReligiousOrderItem struct {
 	ID           string  `json:"id" doc:"Religious order UUID."`

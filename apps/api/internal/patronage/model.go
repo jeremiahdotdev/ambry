@@ -1,6 +1,6 @@
 package patronage
 
-import "github.com/jeremiahdotdev/ambry/apps/api/internal/database"
+import "api/internal/database"
 
 type PatronageItem struct {
 	ID          string  `json:"id" doc:"Patronage UUID."`

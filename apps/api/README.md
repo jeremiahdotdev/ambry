@@ -130,7 +130,7 @@ func Handler(w http.ResponseWriter, r *http.Request)
 
 It lazily initializes the shared application handler once per warm function instance and reuses the PostgreSQL pool across requests handled by that instance. It never calls `ListenAndServe`.
 
-`vercel.json` rewrites only the public API and documentation paths to the Go function destination `/api`, preserving routes such as:
+`vercel.json` rewrites only the public API and documentation paths to the Go function at `/api/index` and passes the original public route in an internal `route` query parameter. The Vercel handler restores `r.URL.Path` before handing the request to Huma, so the shared routes still see paths such as:
 
 - `/health`
 - `/api/v1/saints`

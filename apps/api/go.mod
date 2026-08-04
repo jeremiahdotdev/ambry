@@ -1,4 +1,4 @@
-module github.com/jeremiahdotdev/ambry/apps/api
+module api
 
 go 1.25.0
 

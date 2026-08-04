@@ -7,15 +7,15 @@ import (
 	"os"
 	"time"
 
+	"api/internal/api"
+	"api/internal/auth"
+	"api/internal/config"
+	"api/internal/database"
+	"api/internal/feastday"
+	"api/internal/patronage"
+	"api/internal/religiousorder"
+	"api/internal/saint"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/api"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/auth"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/config"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/database"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/feastday"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/patronage"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/religiousorder"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/saint"
 )
 
 type App struct {
@@ -38,14 +38,14 @@ func New(ctx context.Context, cfg config.Config) (*App, error) {
 	feastDayRepo := feastday.NewPostgresRepository(pool, cfg.QueryTimeout)
 
 	server := api.NewServer(api.ServerOptions{
-		Config:                cfg,
-		Logger:                logger,
-		Health:                database.NewHealthChecker(pool, cfg.QueryTimeout),
-		Saints:                saint.NewService(saintRepo),
-		Patronages:            patronage.NewService(patronageRepo),
-		ReligiousOrders:       religiousorder.NewService(orderRepo),
-		FeastDays:             feastday.NewService(feastDayRepo),
-		Authenticator:          auth.NewPostgresAuthenticator(pool, cfg.QueryTimeout),
+		Config:          cfg,
+		Logger:          logger,
+		Health:          database.NewHealthChecker(pool, cfg.QueryTimeout),
+		Saints:          saint.NewService(saintRepo),
+		Patronages:      patronage.NewService(patronageRepo),
+		ReligiousOrders: religiousorder.NewService(orderRepo),
+		FeastDays:       feastday.NewService(feastDayRepo),
+		Authenticator:   auth.NewPostgresAuthenticator(pool, cfg.QueryTimeout),
 	})
 
 	return &App{Handler: server.Handler, Logger: logger, pool: pool}, nil

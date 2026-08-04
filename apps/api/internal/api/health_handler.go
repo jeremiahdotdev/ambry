@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"api/internal/database"
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/database"
 )
 
 type HealthOutput struct {

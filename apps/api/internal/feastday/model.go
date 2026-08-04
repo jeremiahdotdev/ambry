@@ -1,8 +1,8 @@
 package feastday
 
 import (
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/database"
-	"github.com/jeremiahdotdev/ambry/apps/api/internal/saint"
+	"api/internal/database"
+	"api/internal/saint"
 )
 
 type Filters struct {

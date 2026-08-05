@@ -1,5 +1,5 @@
 .developer-auth-page {
-    justify-content: center;
+    justify-content: flex-start;
     padding-bottom: 3rem;
 }
 
@@ -7,7 +7,7 @@
     position: relative;
     z-index: 2;
     width: min(100%, 34rem);
-    margin-block: 2rem;
+    margin-block: auto;
     border: 1px solid rgb(255 255 255 / 84%);
     border-radius: 6px;
     background: rgb(255 255 255 / 86%);

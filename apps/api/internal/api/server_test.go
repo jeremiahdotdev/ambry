@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"api/internal/bibleverse"
 	"api/internal/config"
 	"api/internal/database"
 	"api/internal/feastday"
@@ -34,6 +35,7 @@ func testServer(health database.HealthChecker) Server {
 		Patronages:      patronage.NewService(emptyPatronageRepo{}),
 		ReligiousOrders: religiousorder.NewService(emptyOrderRepo{}),
 		FeastDays:       feastday.NewService(emptyFeastRepo{}),
+		BibleVerses:     bibleverse.NewService(bibleVerseRepoFake{}),
 	})
 }
 

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"api/internal/bibleverse"
 	"api/internal/feastday"
 	"api/internal/patronage"
 	"api/internal/religiousorder"
@@ -14,4 +15,5 @@ func RegisterRoutes(api huma.API, opts ServerOptions) {
 	patronage.RegisterRoutes(api, opts.Patronages)
 	religiousorder.RegisterRoutes(api, opts.ReligiousOrders)
 	feastday.RegisterRoutes(api, opts.FeastDays)
+	bibleverse.RegisterRoutes(api, opts.BibleVerses)
 }

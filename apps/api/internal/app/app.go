@@ -9,6 +9,7 @@ import (
 
 	"api/internal/api"
 	"api/internal/auth"
+	"api/internal/bibleverse"
 	"api/internal/config"
 	"api/internal/database"
 	"api/internal/feastday"
@@ -36,6 +37,7 @@ func New(ctx context.Context, cfg config.Config) (*App, error) {
 	patronageRepo := patronage.NewPostgresRepository(pool, cfg.QueryTimeout)
 	orderRepo := religiousorder.NewPostgresRepository(pool, cfg.QueryTimeout)
 	feastDayRepo := feastday.NewPostgresRepository(pool, cfg.QueryTimeout)
+	bibleVerseRepo := bibleverse.NewPostgresRepository(pool, cfg.QueryTimeout)
 
 	server := api.NewServer(api.ServerOptions{
 		Config:          cfg,
@@ -45,6 +47,7 @@ func New(ctx context.Context, cfg config.Config) (*App, error) {
 		Patronages:      patronage.NewService(patronageRepo),
 		ReligiousOrders: religiousorder.NewService(orderRepo),
 		FeastDays:       feastday.NewService(feastDayRepo),
+		BibleVerses:     bibleverse.NewService(bibleVerseRepo),
 		Authenticator:   auth.NewPostgresAuthenticator(pool, cfg.QueryTimeout),
 	})
 

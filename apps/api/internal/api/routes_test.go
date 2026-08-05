@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"api/internal/auth"
+	"api/internal/bibleverse"
 	"api/internal/config"
 	"api/internal/database"
 	"api/internal/feastday"
@@ -70,6 +71,22 @@ func (emptyFeastRepo) List(context.Context, feastday.Filters) (feastday.FeastDay
 	return feastday.FeastDayPage{Data: []saint.SearchResult{}, Pagination: database.NewPagination(1, 20, 0)}, nil
 }
 
+type bibleVerseRepoFake struct{}
+
+func (bibleVerseRepoFake) List(context.Context, bibleverse.Filters) (bibleverse.VersePage, error) {
+	return bibleverse.VersePage{
+		Data: []bibleverse.Verse{{
+			ID:        "newadvent-bible-gen-001-001",
+			Book:      "Genesis",
+			BookCode:  "gen",
+			BookOrder: 1,
+			Chapter:   1,
+			Verse:     1,
+		}},
+		Pagination: database.NewPagination(1, 20, 1),
+	}, nil
+}
+
 func TestListSaintsHandlerSuccess(t *testing.T) {
 	server := NewServer(ServerOptions{
 		Config: config.Config{
@@ -83,10 +100,37 @@ func TestListSaintsHandlerSuccess(t *testing.T) {
 		Patronages:      patronage.NewService(emptyPatronageRepo{}),
 		ReligiousOrders: religiousorder.NewService(emptyOrderRepo{}),
 		FeastDays:       feastday.NewService(emptyFeastRepo{}),
+		BibleVerses:     bibleverse.NewService(bibleVerseRepoFake{}),
 		Authenticator:   acceptingAuthenticator{},
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/saints?q=test", nil)
+	req.Header.Set("Authorization", "Bearer saints_test_valid")
+	rec := httptest.NewRecorder()
+	server.Handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestListBibleVersesHandlerSuccess(t *testing.T) {
+	server := NewServer(ServerOptions{
+		Config: config.Config{
+			Port:           "8080",
+			AllowedOrigins: []string{"*"},
+			RequestTimeout: 5 * time.Second,
+		},
+		Logger:          slog.Default(),
+		Health:          okHealth{},
+		Saints:          saint.NewService(saintRepoFake{}),
+		Patronages:      patronage.NewService(emptyPatronageRepo{}),
+		ReligiousOrders: religiousorder.NewService(emptyOrderRepo{}),
+		FeastDays:       feastday.NewService(emptyFeastRepo{}),
+		BibleVerses:     bibleverse.NewService(bibleVerseRepoFake{}),
+		Authenticator:   acceptingAuthenticator{},
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/bible-verses?book_code=gen&chapter=1", nil)
 	req.Header.Set("Authorization", "Bearer saints_test_valid")
 	rec := httptest.NewRecorder()
 	server.Handler.ServeHTTP(rec, req)
@@ -108,6 +152,7 @@ func TestGetSaintNotFound(t *testing.T) {
 		Patronages:      patronage.NewService(emptyPatronageRepo{}),
 		ReligiousOrders: religiousorder.NewService(emptyOrderRepo{}),
 		FeastDays:       feastday.NewService(emptyFeastRepo{}),
+		BibleVerses:     bibleverse.NewService(bibleVerseRepoFake{}),
 		Authenticator:   acceptingAuthenticator{},
 	})
 
@@ -133,6 +178,7 @@ func TestAPIKeyRequired(t *testing.T) {
 		Patronages:      patronage.NewService(emptyPatronageRepo{}),
 		ReligiousOrders: religiousorder.NewService(emptyOrderRepo{}),
 		FeastDays:       feastday.NewService(emptyFeastRepo{}),
+		BibleVerses:     bibleverse.NewService(bibleVerseRepoFake{}),
 		Authenticator:   acceptingAuthenticator{},
 	})
 
@@ -157,6 +203,7 @@ func TestAPIKeyInvalid(t *testing.T) {
 		Patronages:      patronage.NewService(emptyPatronageRepo{}),
 		ReligiousOrders: religiousorder.NewService(emptyOrderRepo{}),
 		FeastDays:       feastday.NewService(emptyFeastRepo{}),
+		BibleVerses:     bibleverse.NewService(bibleVerseRepoFake{}),
 		Authenticator:   rejectingAuthenticator{},
 	})
 

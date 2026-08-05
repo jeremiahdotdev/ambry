@@ -121,3 +121,19 @@ create table religious_order_saint (
     updated_at timestamp,
     unique (saint_id, religious_order_id, role)
 );
+
+create table bible_verses (
+    id varchar primary key,
+    book varchar not null,
+    book_code varchar not null,
+    book_order integer not null,
+    chapter integer not null,
+    verse integer not null,
+    greek_text text,
+    english_text text,
+    latin_text text,
+    source_file varchar not null,
+    checksum varchar not null,
+    created_at timestamp not null,
+    updated_at timestamp not null
+);

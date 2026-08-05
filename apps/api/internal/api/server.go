@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"api/internal/auth"
+	"api/internal/bibleverse"
 	"api/internal/config"
 	"api/internal/database"
 	"api/internal/feastday"
@@ -28,6 +29,7 @@ type ServerOptions struct {
 	Patronages      patronage.Service
 	ReligiousOrders religiousorder.Service
 	FeastDays       feastday.Service
+	BibleVerses     bibleverse.Service
 	Authenticator   auth.Authenticator
 }
 

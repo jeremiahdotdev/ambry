@@ -32,6 +32,12 @@ func (rejectingAuthenticator) Authenticate(context.Context, string) error {
 	return auth.ErrInvalidToken
 }
 
+type rateLimitedAuthenticator struct{}
+
+func (rateLimitedAuthenticator) Authenticate(context.Context, string) error {
+	return auth.ErrRateLimited
+}
+
 type saintRepoFake struct{}
 
 func (saintRepoFake) Search(context.Context, saint.SearchFilters) (saint.SearchPage, error) {
@@ -213,5 +219,34 @@ func TestAPIKeyInvalid(t *testing.T) {
 	server.Handler.ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAPIKeyRateLimit(t *testing.T) {
+	server := NewServer(ServerOptions{
+		Config: config.Config{
+			Port:           "8080",
+			AllowedOrigins: []string{"*"},
+			RequestTimeout: 5 * time.Second,
+		},
+		Logger:          slog.Default(),
+		Health:          okHealth{},
+		Saints:          saint.NewService(saintRepoFake{}),
+		Patronages:      patronage.NewService(emptyPatronageRepo{}),
+		ReligiousOrders: religiousorder.NewService(emptyOrderRepo{}),
+		FeastDays:       feastday.NewService(emptyFeastRepo{}),
+		BibleVerses:     bibleverse.NewService(bibleVerseRepoFake{}),
+		Authenticator:   rateLimitedAuthenticator{},
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/saints?q=test", nil)
+	req.Header.Set("Authorization", "Bearer saints_test_rate_limited")
+	rec := httptest.NewRecorder()
+	server.Handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("Retry-After"); got != "1" {
+		t.Fatalf("expected Retry-After 1, got %q", got)
 	}
 }

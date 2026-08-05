@@ -26,6 +26,7 @@ func RegisterRoutes(api huma.API, service Service) {
 		Summary:     "List feast-day calendar entries",
 		Description: "Returns saints associated with matching feast days.",
 		Tags:        []string{"Feast Days"},
+		Security:    []map[string][]string{{"BearerAuth": {}}},
 	}, func(ctx context.Context, input *listFeastDaysInput) (*listFeastDaysOutput, error) {
 		if input.Month < 0 || input.Month > 12 {
 			return nil, huma.Error400BadRequest("month must be between 1 and 12")

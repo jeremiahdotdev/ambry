@@ -25,6 +25,7 @@ func RegisterRoutes(api huma.API, service Service) {
 		Summary:     "List religious orders",
 		Description: "Lists religious orders with associated saint counts.",
 		Tags:        []string{"Religious Orders"},
+		Security:    []map[string][]string{{"BearerAuth": {}}},
 	}, func(ctx context.Context, input *listOrdersInput) (*listOrdersOutput, error) {
 		page, err := service.List(ctx, Filters{Query: input.Query, Page: input.Page, PerPage: input.PerPage})
 		if err != nil {

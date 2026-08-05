@@ -137,3 +137,18 @@ create table bible_verses (
     created_at timestamp not null,
     updated_at timestamp not null
 );
+
+create table developer_api_keys (
+    id bigserial primary key,
+    user_id bigint not null,
+    name varchar not null,
+    prefix varchar(32) not null,
+    token_hash varchar(64) not null unique,
+    last_used_at timestamp,
+    request_window_started_at timestamp,
+    request_window_count smallint not null default 0,
+    expires_at timestamp,
+    revoked_at timestamp,
+    created_at timestamp,
+    updated_at timestamp
+);

@@ -110,6 +110,7 @@ func knownRouteGuard(next http.Handler) http.Handler {
 			path == "/health" ||
 			path == "/openapi.json" ||
 			path == "/openapi.yaml" ||
+			strings.HasPrefix(path, "/schemas/") ||
 			strings.HasPrefix(path, "/api/v1/") {
 			next.ServeHTTP(w, r)
 			return
@@ -142,6 +143,10 @@ func apiKeyAuth(authenticator auth.Authenticator, logger *slog.Logger) func(http
 					writeAuthError(w, http.StatusUnauthorized, "api_key_invalid", "API key is invalid or inactive.")
 					return
 				}
+				if errors.Is(err, auth.ErrRateLimited) {
+					writeRateLimitError(w)
+					return
+				}
 				logger.Error("api key verification failed", "error", err, "request_id", r.Context().Value(requestIDKey))
 				writeAuthError(w, http.StatusServiceUnavailable, "api_key_verification_unavailable", "API key verification is temporarily unavailable.")
 				return
@@ -164,6 +169,13 @@ func writeAuthError(w http.ResponseWriter, status int, code, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_, _ = w.Write([]byte(`{"error":{"code":"` + code + `","message":"` + message + `","details":null}}`))
+}
+
+func writeRateLimitError(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", "1")
+	w.WriteHeader(http.StatusTooManyRequests)
+	_, _ = w.Write([]byte(`{"error":{"code":"rate_limit_exceeded","message":"Too many requests for this API key.","details":null}}`))
 }
 
 func securityHeaders(next http.Handler) http.Handler {

@@ -73,9 +73,12 @@ limit $` + fmt.Sprint(len(args)-1) + ` offset $` + fmt.Sprint(len(args))
 	items := make([]Verse, 0, perPage)
 	for rows.Next() {
 		var item Verse
-		if err := rows.Scan(&item.ID, &item.Book, &item.BookCode, &item.BookOrder, &item.Chapter, &item.Verse, &item.GreekText, &item.EnglishText, &item.LatinText); err != nil {
+		var book, bookCode string
+		if err := rows.Scan(&item.ID, &book, &bookCode, &item.BookOrder, &item.Chapter, &item.Verse, &item.GreekText, &item.EnglishText, &item.LatinText); err != nil {
 			return VersePage{}, err
 		}
+		item.Book = BookName(book)
+		item.BookCode = BookCode(bookCode)
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {

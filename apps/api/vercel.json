@@ -18,6 +18,10 @@
       "destination": "/api/index?route=/openapi.yaml"
     },
     {
+      "source": "/schemas/:path*",
+      "destination": "/api/index?route=/schemas/:path*"
+    },
+    {
       "source": "/api/v1/:path*",
       "destination": "/api/index?route=/api/v1/:path*"
     }

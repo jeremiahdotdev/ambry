@@ -2,6 +2,39 @@
 
 Read-only Go REST API app for the existing Ambry Catholic saints PostgreSQL database. This app lives inside the Ambry monorepo at `apps/api`.
 
+## Overview
+
+Ambry exposes a read-only REST API for saints, patronages, religious orders, feast days, and Bible verses. The interactive API documentation is available at `/`, and the raw OpenAPI documents are available at `/openapi.json` and `/openapi.yaml`.
+
+All `/api/v1/*` endpoints require a developer API key. Public endpoints are limited to `/health`, `/`, `/openapi.json`, and `/openapi.yaml`.
+
+### Get an API Key
+
+1. Create an account at `/signup`, or log in at `/login` if you already have one.
+2. Open `/developers/api-keys`.
+3. Create a key with a descriptive name and optional expiration date.
+4. Copy the token immediately. The full token is shown only once.
+
+Each email can have up to 3 active API keys. Expired or revoked keys do not count against that limit.
+
+### Authenticate Requests
+
+Send the API key as a bearer token:
+
+```bash
+curl -H 'Authorization: Bearer saints_test_...' \
+  'http://localhost:8080/api/v1/saints?q=patrick'
+```
+
+You can also send it with `X-API-Key`:
+
+```bash
+curl -H 'X-API-Key: saints_test_...' \
+  'http://localhost:8080/api/v1/bible-verses?book_code=gen&chapter=1'
+```
+
+API keys are rate limited to 10 requests per second per key. Requests over the limit return `429 Too Many Requests` with `Retry-After: 1`.
+
 ## Stack
 
 - Go 1.24+
@@ -55,6 +88,7 @@ Unresolved mappings:
 - `GET /api/v1/patronages`
 - `GET /api/v1/religious-orders`
 - `GET /api/v1/feast-days`
+- `GET /api/v1/bible-verses`
 
 Documentation:
 
@@ -62,7 +96,7 @@ Documentation:
 - `GET /openapi.json`
 - `GET /openapi.yaml`
 
-All `/api/v1/*` routes require a developer API key created by the Laravel web app. Public routes are limited to `/health`, `/`, `/openapi.json`, and `/openapi.yaml`.
+All `/api/v1/*` routes require a developer API key created by the Laravel web app.
 
 ## Configuration
 
@@ -104,7 +138,88 @@ curl -H 'Authorization: Bearer saints_test_...' 'http://localhost:8080/api/v1/sa
 curl -H 'X-API-Key: saints_test_...' 'http://localhost:8080/api/v1/patronages?q=ireland'
 curl -H 'X-API-Key: saints_test_...' 'http://localhost:8080/api/v1/religious-orders'
 curl -H 'X-API-Key: saints_test_...' 'http://localhost:8080/api/v1/feast-days?month=3&day=17'
+curl -H 'X-API-Key: saints_test_...' 'http://localhost:8080/api/v1/bible-verses?book_code=gen&chapter=1'
 ```
+
+### Bible Book Codes
+
+The `/api/v1/bible-verses` endpoint accepts either the exact `book` name or the exact `book_code`.
+
+| Order | Code | Book |
+| ---: | --- | --- |
+| 1 | `gen` | Genesis |
+| 2 | `exo` | Exodus |
+| 3 | `lev` | Leviticus |
+| 4 | `num` | Numbers |
+| 5 | `deu` | Deuteronomy |
+| 6 | `jos` | Joshua |
+| 7 | `jdg` | Judges |
+| 8 | `rut` | Ruth |
+| 9 | `1sa` | 1 Samuel |
+| 10 | `2sa` | 2 Samuel |
+| 11 | `1ki` | 1 Kings |
+| 12 | `2ki` | 2 Kings |
+| 13 | `1ch` | 1 Chronicles |
+| 14 | `2ch` | 2 Chronicles |
+| 15 | `ezr` | Ezra |
+| 16 | `neh` | Nehemiah |
+| 17 | `tob` | Tobit |
+| 18 | `jth` | Judith |
+| 19 | `est` | Esther |
+| 20 | `job` | Job |
+| 21 | `psa` | Psalms |
+| 22 | `pro` | Proverbs |
+| 23 | `ecc` | Ecclesiastes |
+| 24 | `son` | Song of Songs |
+| 25 | `wis` | Wisdom |
+| 26 | `sir` | Sirach |
+| 27 | `isa` | Isaiah |
+| 28 | `jer` | Jeremiah |
+| 29 | `lam` | Lamentations |
+| 30 | `bar` | Baruch |
+| 31 | `eze` | Ezekiel |
+| 32 | `dan` | Daniel |
+| 33 | `hos` | Hosea |
+| 34 | `joe` | Joel |
+| 35 | `amo` | Amos |
+| 36 | `oba` | Obadiah |
+| 37 | `jon` | Jonah |
+| 38 | `mic` | Micah |
+| 39 | `nah` | Nahum |
+| 40 | `hab` | Habakkuk |
+| 41 | `zep` | Zephaniah |
+| 42 | `hag` | Haggai |
+| 43 | `zec` | Zechariah |
+| 44 | `mal` | Malachi |
+| 45 | `1ma` | 1 Maccabees |
+| 46 | `2ma` | 2 Maccabees |
+| 47 | `mat` | Matthew |
+| 48 | `mar` | Mark |
+| 49 | `luk` | Luke |
+| 50 | `joh` | John |
+| 51 | `act` | Acts |
+| 52 | `rom` | Romans |
+| 53 | `1co` | 1 Corinthians |
+| 54 | `2co` | 2 Corinthians |
+| 55 | `gal` | Galatians |
+| 56 | `eph` | Ephesians |
+| 57 | `phi` | Philippians |
+| 58 | `col` | Colossians |
+| 59 | `1th` | 1 Thessalonians |
+| 60 | `2th` | 2 Thessalonians |
+| 61 | `1ti` | 1 Timothy |
+| 62 | `2ti` | 2 Timothy |
+| 63 | `tit` | Titus |
+| 64 | `phm` | Philemon |
+| 65 | `heb` | Hebrews |
+| 66 | `jam` | James |
+| 67 | `1pe` | 1 Peter |
+| 68 | `2pe` | 2 Peter |
+| 69 | `1jo` | 1 John |
+| 70 | `2jo` | 2 John |
+| 71 | `3jo` | 3 John |
+| 72 | `jud` | Jude |
+| 73 | `rev` | Revelation |
 
 ## Docker
 

@@ -12,7 +12,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrInvalidToken = errors.New("invalid api key")
+var (
+	ErrInvalidToken = errors.New("invalid api key")
+	ErrRateLimited  = errors.New("api key rate limited")
+)
+
+const maxRequestsPerSecond = 10
 
 type Authenticator interface {
 	Authenticate(ctx context.Context, token string) error
@@ -36,23 +41,45 @@ func (a PostgresAuthenticator) Authenticate(ctx context.Context, token string) e
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var id int64
+	var status string
 	err := a.pool.QueryRow(ctx, `
-with active_key as (
+with matching_key as (
 	select id
 	from developer_api_keys
 	where token_hash = $1
 		and revoked_at is null
 		and (expires_at is null or expires_at > now())
 	limit 1
+),
+updated_key as (
+	update developer_api_keys
+	set
+		last_used_at = now(),
+		updated_at = now(),
+		request_window_started_at = date_trunc('second', now()),
+		request_window_count = case
+			when request_window_started_at = date_trunc('second', now()) then request_window_count + 1
+			else 1
+		end
+	where id = (select id from matching_key)
+		and (
+			request_window_started_at is null
+			or request_window_started_at <> date_trunc('second', now())
+			or request_window_count < $2
+		)
+	returning id
 )
-update developer_api_keys
-set last_used_at = now(), updated_at = now()
-where id = (select id from active_key)
-returning id
-`, tokenHash).Scan(&id)
-	if errors.Is(err, pgx.ErrNoRows) {
+select case
+	when exists(select 1 from updated_key) then 'ok'
+	when exists(select 1 from matching_key) then 'rate_limited'
+	else 'invalid'
+end
+`, tokenHash, maxRequestsPerSecond).Scan(&status)
+	if errors.Is(err, pgx.ErrNoRows) || status == "invalid" {
 		return ErrInvalidToken
+	}
+	if status == "rate_limited" {
+		return ErrRateLimited
 	}
 	return err
 }

@@ -40,6 +40,7 @@ func RegisterRoutes(api huma.API, service Service) {
 		Summary:     "List and search saints",
 		Description: "Search saints by name, alias, biography, patronage, or religious order. Uses safe parameterized PostgreSQL queries and avoids duplicate saints from joins.",
 		Tags:        []string{"Saints"},
+		Security:    []map[string][]string{{"BearerAuth": {}}},
 	}, func(ctx context.Context, input *listSaintsInput) (*listSaintsOutput, error) {
 		if input.FeastMonth < 0 || input.FeastMonth > 12 {
 			return nil, badRequest("feast_month must be between 1 and 12")
@@ -68,6 +69,7 @@ func RegisterRoutes(api huma.API, service Service) {
 		Summary:     "Get saint by slug",
 		Description: "Returns a full saint record and related aliases, feast days, patronages, religious orders, and JSON-backed profile locations/titles when available.",
 		Tags:        []string{"Saints"},
+		Security:    []map[string][]string{{"BearerAuth": {}}},
 	}, func(ctx context.Context, input *getSaintInput) (*getSaintOutput, error) {
 		detail, err := service.GetBySlug(ctx, input.Slug)
 		if err != nil {

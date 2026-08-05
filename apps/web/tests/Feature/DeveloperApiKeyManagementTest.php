@@ -154,11 +154,11 @@ class DeveloperApiKeyManagementTest extends TestCase
         $this->assertNotNull($apiKey->fresh()->revoked_at);
     }
 
-    public function test_user_can_have_only_ten_active_keys(): void
+    public function test_user_can_have_only_three_active_keys(): void
     {
         $user = User::factory()->create();
 
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 3; $i++) {
             $user->developerApiKeys()->create([
                 'name' => "Key {$i}",
                 'prefix' => "saints_test_{$i}",
@@ -175,14 +175,14 @@ class DeveloperApiKeyManagementTest extends TestCase
             ->assertRedirect(route('developers.api-keys.index'))
             ->assertSessionHasErrors('name');
 
-        $this->assertSame(10, $user->developerApiKeys()->count());
+        $this->assertSame(3, $user->developerApiKeys()->count());
     }
 
     public function test_expired_and_revoked_keys_do_not_count_against_active_limit(): void
     {
         $user = User::factory()->create();
 
-        for ($i = 0; $i < 9; $i++) {
+        for ($i = 0; $i < 2; $i++) {
             $user->developerApiKeys()->create([
                 'name' => "Key {$i}",
                 'prefix' => "saints_test_active_{$i}",
@@ -212,7 +212,7 @@ class DeveloperApiKeyManagementTest extends TestCase
             ->assertRedirect(route('developers.api-keys.index'))
             ->assertSessionHasNoErrors();
 
-        $this->assertSame(12, $user->developerApiKeys()->count());
+        $this->assertSame(5, $user->developerApiKeys()->count());
     }
 
     public function test_api_routes_require_a_developer_api_key(): void
@@ -312,5 +312,43 @@ class DeveloperApiKeyManagementTest extends TestCase
             ->withHeader('X-API-Key', $token)
             ->getJson('/api/saints')
             ->assertOk();
+    }
+
+    public function test_api_routes_throttle_each_developer_api_key_to_ten_requests_per_second(): void
+    {
+        Carbon::setTestNow('2026-08-05 12:00:00');
+        $user = User::factory()->create();
+        $token = 'saints_test_rate_limited_token';
+
+        $user->developerApiKeys()->create([
+            'name' => 'Rate limited key',
+            'prefix' => substr($token, 0, 24),
+            'token_hash' => DeveloperApiKey::hashToken($token),
+        ]);
+
+        for ($i = 0; $i < 10; $i++) {
+            $this
+                ->withHeader('Authorization', "Bearer {$token}")
+                ->getJson('/api/saints')
+                ->assertOk();
+        }
+
+        $this
+            ->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/saints')
+            ->assertTooManyRequests()
+            ->assertHeader('Retry-After', '1')
+            ->assertJson([
+                'message' => 'Too many requests for this API key.',
+            ]);
+
+        Carbon::setTestNow('2026-08-05 12:00:01');
+
+        $this
+            ->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/saints')
+            ->assertOk();
+
+        Carbon::setTestNow();
     }
 }

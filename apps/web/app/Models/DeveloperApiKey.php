@@ -29,6 +29,8 @@ class DeveloperApiKey extends Model
         return [
             'expires_at' => 'datetime',
             'last_used_at' => 'datetime',
+            'request_window_started_at' => 'datetime',
+            'request_window_count' => 'integer',
             'revoked_at' => 'datetime',
         ];
     }

@@ -277,6 +277,7 @@
     right: 0;
     top: calc(100% + 0.45rem);
     min-width: max-content;
+    max-width: calc(100vw - 2rem);
     border: 1px solid rgb(91 62 48 / 13%);
     border-radius: 999px;
     background: #401b3f;
@@ -578,6 +579,11 @@
     .search-result-indicators {
         right: auto;
         left: 0.5rem;
+    }
+
+    .search-result-indicator-popover {
+        right: auto;
+        left: 0;
     }
 
     .search-result-patronages {

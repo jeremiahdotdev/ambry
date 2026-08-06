@@ -1,0 +1,22 @@
+{
+  "security": {
+    "bearer_auth": "Use the developer API key created at /developers/api-keys."
+  },
+  "tags": {
+    "bible_verses": "Search and filter Bible verses by book, chapter, verse, and text.",
+    "feast_days": "Find saints associated with feast-day calendar dates.",
+    "health": "Check service and database availability.",
+    "patronages": "Browse patronage categories and their associated saint counts.",
+    "religious_orders": "Browse religious orders and their associated saint counts.",
+    "saints": "Search saint records and retrieve full saint profiles."
+  },
+  "operations": {
+    "get_health": "Returns service status and PostgreSQL connectivity.",
+    "get_saint_by_slug": "Returns a full saint record and related aliases, feast days, patronages, religious orders, and JSON-backed profile locations/titles when available.",
+    "list_bible_verses": "Lists Bible verses with optional filters for book, book code, chapter, verse number, and text search.",
+    "list_feast_days": "Returns saints associated with matching feast days.",
+    "list_patronages": "Lists patronages with associated saint counts.",
+    "list_religious_orders": "Lists religious orders with associated saint counts.",
+    "list_saints": "Search saints by name, alias, biography, patronage, or religious order. Uses safe parameterized PostgreSQL queries and avoids duplicate saints from joins."
+  }
+}

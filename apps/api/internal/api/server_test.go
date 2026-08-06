@@ -83,7 +83,7 @@ func TestDocsUseAmbryOverviewAndTheme(t *testing.T) {
 		t.Fatalf("expected docs 200, got %d", docsRec.Code)
 	}
 	docsBody := docsRec.Body.String()
-	for _, expected := range []string{"@scalar/api-reference", "customCss", "hideModels", "false", "#42183d", "#fff9ef"} {
+	for _, expected := range []string{"@scalar/api-reference", "customCss", "hideModels", "false", "#1d0618", "#fff9ef"} {
 		if !strings.Contains(docsBody, expected) {
 			t.Fatalf("expected docs body to contain %q", expected)
 		}
@@ -112,6 +112,10 @@ func TestDocsUseAmbryOverviewAndTheme(t *testing.T) {
 		t.Fatal("OpenAPI document should not include prose Bible book mapping")
 	}
 
+	if !documentContainsTagDescription(document, "Bible Verses", "Search and filter Bible verses by book, chapter, verse, and text.") {
+		t.Fatal("expected OpenAPI document to contain Bible Verses tag description")
+	}
+
 	components := document["components"].(map[string]any)
 	securitySchemes := components["securitySchemes"].(map[string]any)
 	if _, ok := securitySchemes["BearerAuth"]; !ok {
@@ -120,6 +124,20 @@ func TestDocsUseAmbryOverviewAndTheme(t *testing.T) {
 	if !documentContainsEnumValue(document, "gen") || !documentContainsEnumValue(document, "Revelation") {
 		t.Fatal("expected OpenAPI document to contain Bible book code and name enum values")
 	}
+}
+
+func documentContainsTagDescription(document map[string]any, name string, description string) bool {
+	tags, ok := document["tags"].([]any)
+	if !ok {
+		return false
+	}
+	for _, item := range tags {
+		tag, ok := item.(map[string]any)
+		if ok && tag["name"] == name && tag["description"] == description {
+			return true
+		}
+	}
+	return false
 }
 
 func documentContainsEnumValue(value any, expected string) bool {

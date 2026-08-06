@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"api/internal/apidocs"
 	"api/internal/database"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -22,7 +23,7 @@ func RegisterHealth(api huma.API, checker database.HealthChecker, logger *slog.L
 		Method:      http.MethodGet,
 		Path:        "/health",
 		Summary:     "Health check",
-		Description: "Returns service status and PostgreSQL connectivity.",
+		Description: apidocs.Text(apidocs.Content.Operations.GetHealth),
 		Tags:        []string{"Health"},
 	}, func(ctx context.Context, input *struct{}) (*HealthOutput, error) {
 		out := &HealthOutput{}

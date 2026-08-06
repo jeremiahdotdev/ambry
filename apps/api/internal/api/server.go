@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"api/internal/apidocs"
 	"api/internal/auth"
 	"api/internal/bibleverse"
 	"api/internal/config"
@@ -36,14 +37,22 @@ type ServerOptions struct {
 func NewServer(opts ServerOptions) Server {
 	mux := http.NewServeMux()
 	humaConfig := huma.DefaultConfig("✣ Ambry API", "1.0.0")
-	humaConfig.Info.Description = apiOverview
+	humaConfig.Info.Description = apidocs.Markdown(apidocs.Overview)
+	humaConfig.Tags = []*huma.Tag{
+		{Name: "Bible Verses", Description: apidocs.Text(apidocs.Content.Tags.BibleVerses)},
+		{Name: "Feast Days", Description: apidocs.Text(apidocs.Content.Tags.FeastDays)},
+		{Name: "Patronages", Description: apidocs.Text(apidocs.Content.Tags.Patronages)},
+		{Name: "Religious Orders", Description: apidocs.Text(apidocs.Content.Tags.ReligiousOrders)},
+		{Name: "Saints", Description: apidocs.Text(apidocs.Content.Tags.Saints)},
+		{Name: "Health", Description: apidocs.Text(apidocs.Content.Tags.Health)},
+	}
 	humaConfig.DocsPath = "/"
 	humaConfig.DocsRenderer = huma.DocsRendererScalar
 	humaConfig.DocsRendererConfig = map[string]any{
 		"theme":              "none",
 		"layout":             "modern",
-		"forceThemeMode":     "light",
-		"hideDarkModeToggle": true,
+		"darkMode":           false,
+		"hideDarkModeToggle": false,
 		"hideModels":         false,
 		"withDefaultFonts":   false,
 		"customCss":          docsCustomCSS,
@@ -53,7 +62,7 @@ func NewServer(opts ServerOptions) Server {
 			Type:         "http",
 			Scheme:       "bearer",
 			BearerFormat: "Developer API key",
-			Description:  "Use the developer API key created at /developers/api-keys.",
+			Description:  apidocs.Text(apidocs.Content.Security.BearerAuth),
 		},
 	}
 	humaConfig.Servers = []*huma.Server{{URL: "/"}}

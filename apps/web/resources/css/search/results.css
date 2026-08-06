@@ -8,7 +8,7 @@
 .search-results-page {
     align-items: stretch;
     justify-content: flex-start;
-    padding: clamp(1rem, 3vw, 2rem);
+    padding: 0 clamp(1rem, 3vw, 2rem) clamp(1rem, 3vw, 2rem);
     overflow-x: hidden;
     text-align: left;
 }

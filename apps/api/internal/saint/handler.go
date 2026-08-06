@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"api/internal/apidocs"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -38,7 +39,7 @@ func RegisterRoutes(api huma.API, service Service) {
 		Method:      http.MethodGet,
 		Path:        "/api/v1/saints",
 		Summary:     "List and search saints",
-		Description: "Search saints by name, alias, biography, patronage, or religious order. Uses safe parameterized PostgreSQL queries and avoids duplicate saints from joins.",
+		Description: apidocs.Text(apidocs.Content.Operations.ListSaints),
 		Tags:        []string{"Saints"},
 		Security:    []map[string][]string{{"BearerAuth": {}}},
 	}, func(ctx context.Context, input *listSaintsInput) (*listSaintsOutput, error) {
@@ -67,7 +68,7 @@ func RegisterRoutes(api huma.API, service Service) {
 		Method:      http.MethodGet,
 		Path:        "/api/v1/saints/{slug}",
 		Summary:     "Get saint by slug",
-		Description: "Returns a full saint record and related aliases, feast days, patronages, religious orders, and JSON-backed profile locations/titles when available.",
+		Description: apidocs.Text(apidocs.Content.Operations.GetSaintBySlug),
 		Tags:        []string{"Saints"},
 		Security:    []map[string][]string{{"BearerAuth": {}}},
 	}, func(ctx context.Context, input *getSaintInput) (*getSaintOutput, error) {

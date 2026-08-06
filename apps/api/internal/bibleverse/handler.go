@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"api/internal/apidocs"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -27,7 +28,7 @@ func RegisterRoutes(api huma.API, service Service) {
 		Method:      http.MethodGet,
 		Path:        "/api/v1/bible-verses",
 		Summary:     "List Bible verses",
-		Description: "Lists Bible verses with optional filters for book, book code, chapter, verse number, and text search.",
+		Description: apidocs.Text(apidocs.Content.Operations.ListBibleVerses),
 		Tags:        []string{"Bible Verses"},
 		Security:    []map[string][]string{{"BearerAuth": {}}},
 	}, func(ctx context.Context, input *listVersesInput) (*listVersesOutput, error) {

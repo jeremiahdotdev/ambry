@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"api/internal/apidocs"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -24,7 +25,7 @@ func RegisterRoutes(api huma.API, service Service) {
 		Method:      http.MethodGet,
 		Path:        "/api/v1/feast-days",
 		Summary:     "List feast-day calendar entries",
-		Description: "Returns saints associated with matching feast days.",
+		Description: apidocs.Text(apidocs.Content.Operations.ListFeastDays),
 		Tags:        []string{"Feast Days"},
 		Security:    []map[string][]string{{"BearerAuth": {}}},
 	}, func(ctx context.Context, input *listFeastDaysInput) (*listFeastDaysOutput, error) {

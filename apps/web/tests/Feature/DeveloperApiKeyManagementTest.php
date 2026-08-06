@@ -109,14 +109,17 @@ class DeveloperApiKeyManagementTest extends TestCase
             ->get(route('developers.api-keys.index'))
             ->assertOk()
             ->assertSee('Local dashboard')
-            ->assertSee($plainTextToken);
+            ->assertSee('API key created')
+            ->assertDontSee($plainTextToken)
+            ->assertDontSee($apiKey->prefix);
 
         $this
             ->actingAs($user)
             ->get(route('developers.api-keys.index'))
             ->assertOk()
             ->assertSee('Local dashboard')
-            ->assertDontSee($plainTextToken);
+            ->assertDontSee($plainTextToken)
+            ->assertDontSee($apiKey->prefix);
 
         Carbon::setTestNow();
     }

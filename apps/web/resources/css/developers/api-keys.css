@@ -64,7 +64,8 @@
     border-radius: 6px;
     background: rgb(255 255 255 / 86%);
     box-shadow:
-        0 1rem 2rem rgb(73 40 34 / 8%),
+        0 1.35rem 3rem rgb(73 40 34 / 16%),
+        0 0.35rem 1rem rgb(73 40 34 / 10%),
         inset 0 1px 0 rgb(255 255 255 / 90%);
     padding: 1.25rem;
 }
@@ -188,7 +189,16 @@
 }
 
 .developer-danger-button {
-    background: #8a1f1f;
+    background: #b51624;
+    color: #fffaf0;
+    box-shadow:
+        0 0.55rem 1rem rgb(138 31 31 / 20%),
+        inset 0 1px 0 rgb(255 255 255 / 14%);
+}
+
+.developer-danger-button:hover,
+.developer-danger-button:focus-visible {
+    background: #8f101b;
 }
 
 @media (max-width: 820px) {

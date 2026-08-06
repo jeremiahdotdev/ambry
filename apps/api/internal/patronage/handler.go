@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"api/internal/apidocs"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -23,7 +24,7 @@ func RegisterRoutes(api huma.API, service Service) {
 		Method:      http.MethodGet,
 		Path:        "/api/v1/patronages",
 		Summary:     "List patronages",
-		Description: "Lists patronages with associated saint counts.",
+		Description: apidocs.Text(apidocs.Content.Operations.ListPatronages),
 		Tags:        []string{"Patronages"},
 		Security:    []map[string][]string{{"BearerAuth": {}}},
 	}, func(ctx context.Context, input *listPatronagesInput) (*listPatronagesOutput, error) {

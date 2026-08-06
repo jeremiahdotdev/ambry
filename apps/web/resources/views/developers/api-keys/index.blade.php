@@ -45,9 +45,8 @@
 
         @if ($newToken)
             <section class="developer-token" aria-label="New API token">
-                <h2>Copy your new API key</h2>
-                <p>This is the only time the full token will be shown.</p>
-                <code>{{ $newToken }}</code>
+                <h2>API key created</h2>
+                <p>The key value is hidden and cannot be viewed again.</p>
             </section>
         @endif
 
@@ -90,7 +89,6 @@
                         <article class="developer-key">
                             <div>
                                 <h3>{{ $apiKey->name }}</h3>
-                                <p><code>{{ $apiKey->prefix }}...</code></p>
                             </div>
 
                             <dl>

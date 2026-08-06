@@ -1,0 +1,35 @@
+:root {
+  --scalar-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --scalar-font-code: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+.light-mode {
+  --scalar-color-1: #20252d;
+  --scalar-color-2: #4f5b6b;
+  --scalar-color-3: #667085;
+  --scalar-color-accent: #8b3f1d;
+  --scalar-background-1: #fff9ef;
+  --scalar-background-2: #f7efe4;
+  --scalar-background-3: #f5e7d6;
+  --scalar-background-accent: rgb(216 160 82 / 16%);
+  --scalar-border-color: #ded3c1;
+}
+
+.light-mode .sidebar {
+  --scalar-sidebar-background-1: #42183d;
+  --scalar-sidebar-item-hover-color: #f8e9c8;
+  --scalar-sidebar-item-hover-background: rgb(248 233 200 / 10%);
+  --scalar-sidebar-item-active-background: rgb(216 160 82 / 18%);
+  --scalar-sidebar-border-color: rgb(248 233 200 / 16%);
+  --scalar-sidebar-color-1: #f8e9c8;
+  --scalar-sidebar-color-2: rgb(248 233 200 / 72%);
+  --scalar-sidebar-color-active: #f5c471;
+  --scalar-sidebar-search-background: rgb(248 233 200 / 10%);
+  --scalar-sidebar-search-border-color: rgb(248 233 200 / 18%);
+  --scalar-sidebar-search-color: rgb(248 233 200 / 78%);
+}
+
+.light-mode button,
+.light-mode .scalar-button {
+  border-radius: 6px;
+}

@@ -23,6 +23,8 @@ type Config struct {
 	DatabaseConnectTimeout  time.Duration
 	QueryTimeout            time.Duration
 	RequestTimeout          time.Duration
+	UpstashRedisRESTURL     string
+	UpstashRedisRESTToken   string
 }
 
 func Load() (Config, error) {
@@ -39,6 +41,8 @@ func Load() (Config, error) {
 		DatabaseConnectTimeout:  envDuration("DATABASE_CONNECT_TIMEOUT", 5*time.Second),
 		QueryTimeout:            envDuration("QUERY_TIMEOUT", 5*time.Second),
 		RequestTimeout:          envDuration("REQUEST_TIMEOUT", 10*time.Second),
+		UpstashRedisRESTURL:     firstEnv("UPSTASH_REDIS_REST_URL", "KV_REST_API_URL"),
+		UpstashRedisRESTToken:   firstEnv("UPSTASH_REDIS_REST_TOKEN", "KV_REST_API_TOKEN"),
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, errors.New("DATABASE_URL is required")
@@ -58,6 +62,15 @@ func env(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func firstEnv(keys ...string) string {
+	for _, key := range keys {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func envInt(key string, fallback int) int {

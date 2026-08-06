@@ -145,10 +145,6 @@ create table users (
     email_verified_at timestamp,
     password varchar not null,
     remember_token varchar(100),
-    api_minute_window_started_at timestamp,
-    api_minute_request_count smallint not null default 0,
-    api_day_window_started_at timestamp,
-    api_day_request_count integer not null default 0,
     created_at timestamp,
     updated_at timestamp
 );

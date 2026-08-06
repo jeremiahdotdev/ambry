@@ -33,7 +33,7 @@ curl -H 'X-API-Key: saints_test_...' \
   'http://localhost:8080/api/v1/bible-verses?book_code=gen&chapter=1'
 ```
 
-API access is rate limited per user account: 60 requests per minute and 5,000 requests per day across all keys on the account. Requests over the limit return `429 Too Many Requests` with `Retry-After: 60`.
+API access is rate limited per user account with Upstash Redis: 60 requests per minute and 5,000 requests per day across all keys on the account. Requests over the limit return `429 Too Many Requests` with `Retry-After: 60`. Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; Vercel KV-style `KV_REST_API_URL` and `KV_REST_API_TOKEN` are also supported.
 
 ## Stack
 
@@ -41,6 +41,7 @@ API access is rate limited per user account: 60 requests per minute and 5,000 re
 - Standard `net/http`
 - Huma v2 with `humago` for routing, validation, OpenAPI, and docs at `/`
 - `pgx/v5` connection pooling
+- Upstash Redis REST API for account-level API quotas
 - SQL query files and `sqlc.yaml` for sqlc generation
 - `log/slog` structured logging
 - Docker and Docker Compose for local development

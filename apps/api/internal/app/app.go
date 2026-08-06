@@ -48,7 +48,7 @@ func New(ctx context.Context, cfg config.Config) (*App, error) {
 		ReligiousOrders: religiousorder.NewService(orderRepo),
 		FeastDays:       feastday.NewService(feastDayRepo),
 		BibleVerses:     bibleverse.NewService(bibleVerseRepo),
-		Authenticator:   auth.NewPostgresAuthenticator(pool, cfg.QueryTimeout),
+		Authenticator:   auth.NewAPIKeyAuthenticator(pool, cfg.QueryTimeout, auth.NewUpstashRateLimiterFromConfig(cfg)),
 	})
 
 	return &App{Handler: server.Handler, Logger: logger, pool: pool}, nil

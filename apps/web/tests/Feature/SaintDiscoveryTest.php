@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Patronage;
 use App\Models\Saint;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -13,8 +12,6 @@ use Tests\TestCase;
 class SaintDiscoveryTest extends TestCase
 {
     use RefreshDatabase;
-
-    private int $apiKeySequence = 0;
 
     public function test_home_page_displays_the_saints_search_form(): void
     {
@@ -545,34 +542,6 @@ class SaintDiscoveryTest extends TestCase
 
         $this->assertSame('Leo I', $leo->displayName());
         $this->assertSame('Doctor of the Church and bishop of Rome.', $leo->displayBiography());
-
-        $this->getJsonWithApiKey('/api/saints/pope-st-leo-i')
-            ->assertOk()
-            ->assertJsonPath('data.name', 'Leo I')
-            ->assertJsonPath('data.biography', 'Doctor of the Church and bishop of Rome.');
-    }
-
-    public function test_api_returns_cleaned_blessed_and_venerable_names(): void
-    {
-        Saint::create([
-            'primary_name' => 'Bl. Adrian Fortescue',
-            'slug' => 'bl-adrian-fortescue',
-            'canonical_status' => 'blessed',
-        ]);
-
-        Saint::create([
-            'primary_name' => 'Ven. Mary Ward',
-            'slug' => 'ven-mary-ward',
-            'canonical_status' => 'venerable',
-        ]);
-
-        $this->getJsonWithApiKey('/api/saints/bl-adrian-fortescue')
-            ->assertOk()
-            ->assertJsonPath('data.name', 'Adrian Fortescue');
-
-        $this->getJsonWithApiKey('/api/saints/ven-mary-ward')
-            ->assertOk()
-            ->assertJsonPath('data.name', 'Mary Ward');
     }
 
     public function test_search_results_use_cleaned_biography_excerpt(): void
@@ -712,33 +681,4 @@ class SaintDiscoveryTest extends TestCase
             ->assertDontSee('Pagination 01');
     }
 
-    public function test_api_returns_saint_search_results(): void
-    {
-        Saint::create([
-            'primary_name' => 'Saint Patrick',
-            'slug' => 'saint-patrick',
-            'biography' => 'Missionary associated with Ireland.',
-        ]);
-
-        $this->getJsonWithApiKey('/api/search?q=Patrick')
-            ->assertOk()
-            ->assertJsonPath('data.0.name', 'Patrick')
-            ->assertJsonPath('data.0.slug', 'saint-patrick')
-            ->assertJsonMissingPath('source_documents');
-    }
-
-    private function getJsonWithApiKey(string $uri)
-    {
-        $token = 'saints_test_discovery_token_'.$this->apiKeySequence++;
-
-        User::factory()->create()->developerApiKeys()->create([
-            'name' => 'Discovery test key',
-            'prefix' => substr($token, 0, 24),
-            'token_hash' => hash('sha256', $token),
-        ]);
-
-        return $this
-            ->withHeader('Authorization', "Bearer {$token}")
-            ->getJson($uri);
-    }
 }

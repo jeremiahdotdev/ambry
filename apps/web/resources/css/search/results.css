@@ -549,7 +549,7 @@
     }
 
     .search-result-indicators {
-        top: -8px;
+        top: 8px;
         left: 1rem;
         padding: 0;
     }

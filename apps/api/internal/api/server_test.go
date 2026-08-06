@@ -105,6 +105,9 @@ func TestDocsUseAmbryOverviewAndTheme(t *testing.T) {
 	if !strings.Contains(description, "## Getting Started") || !strings.Contains(description, "Authorization: Bearer") {
 		t.Fatalf("openapi overview did not include getting started auth guidance: %q", description)
 	}
+	if !strings.Contains(description, "60 requests per minute") || !strings.Contains(description, "5,000 requests per day") {
+		t.Fatalf("openapi overview did not include account rate limit guidance: %q", description)
+	}
 	if strings.Contains(openAPIRec.Body.String(), "Allowed book_code/book values") || strings.Contains(openAPIRec.Body.String(), "gen=Genesis") {
 		t.Fatal("OpenAPI document should not include prose Bible book mapping")
 	}

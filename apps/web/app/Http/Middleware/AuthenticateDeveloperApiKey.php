@@ -11,7 +11,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AuthenticateDeveloperApiKey
 {
-    private const MAX_REQUESTS_PER_SECOND = 10;
+    private const MAX_REQUESTS_PER_DAY = 5000;
+    private const MAX_REQUESTS_PER_MINUTE = 60;
 
     /**
      * @param  Closure(Request): Response  $next
@@ -32,7 +33,7 @@ class AuthenticateDeveloperApiKey
             return $this->unauthorized('API key is invalid or inactive.');
         }
 
-        if (! $this->hitRateLimitWindow($apiKey)) {
+        if (! $this->hitAccountRateLimitWindows($apiKey)) {
             return $this->rateLimited();
         }
 
@@ -56,35 +57,49 @@ class AuthenticateDeveloperApiKey
         ], Response::HTTP_UNAUTHORIZED);
     }
 
-    private function hitRateLimitWindow(DeveloperApiKey $apiKey): bool
+    private function hitAccountRateLimitWindows(DeveloperApiKey $apiKey): bool
     {
         $now = now();
-        $windowStartedAt = $now->copy()->startOfSecond()->format('Y-m-d H:i:s');
+        $minuteStartedAt = $now->copy()->startOfMinute()->format('Y-m-d H:i:s');
+        $dayStartedAt = $now->copy()->startOfDay()->format('Y-m-d H:i:s');
 
-        return DeveloperApiKey::query()
-            ->whereKey($apiKey->id)
-            ->where(function ($query) use ($windowStartedAt): void {
+        $accepted = DB::table('users')
+            ->where('id', $apiKey->user_id)
+            ->where(function ($query) use ($minuteStartedAt): void {
                 $query
-                    ->whereNull('request_window_started_at')
-                    ->orWhere('request_window_started_at', '<>', $windowStartedAt)
-                    ->orWhere('request_window_count', '<', self::MAX_REQUESTS_PER_SECOND);
+                    ->whereNull('api_minute_window_started_at')
+                    ->orWhere('api_minute_window_started_at', '<>', $minuteStartedAt)
+                    ->orWhere('api_minute_request_count', '<', self::MAX_REQUESTS_PER_MINUTE);
+            })
+            ->where(function ($query) use ($dayStartedAt): void {
+                $query
+                    ->whereNull('api_day_window_started_at')
+                    ->orWhere('api_day_window_started_at', '<>', $dayStartedAt)
+                    ->orWhere('api_day_request_count', '<', self::MAX_REQUESTS_PER_DAY);
             })
             ->update([
-                'last_used_at' => $now,
-                'request_window_started_at' => $windowStartedAt,
-                'request_window_count' => DB::raw("case when request_window_started_at = '{$windowStartedAt}' then request_window_count + 1 else 1 end"),
+                'api_minute_window_started_at' => $minuteStartedAt,
+                'api_minute_request_count' => DB::raw("case when api_minute_window_started_at = '{$minuteStartedAt}' then api_minute_request_count + 1 else 1 end"),
+                'api_day_window_started_at' => $dayStartedAt,
+                'api_day_request_count' => DB::raw("case when api_day_window_started_at = '{$dayStartedAt}' then api_day_request_count + 1 else 1 end"),
                 'updated_at' => $now,
             ]) === 1;
+
+        if ($accepted) {
+            $apiKey->forceFill(['last_used_at' => $now])->saveQuietly();
+        }
+
+        return $accepted;
     }
 
     private function rateLimited(): JsonResponse
     {
         return response()
             ->json([
-                'message' => 'Too many requests for this API key.',
+                'message' => 'Too many requests for this user account.',
             ], Response::HTTP_TOO_MANY_REQUESTS)
             ->withHeaders([
-                'Retry-After' => '1',
+                'Retry-After' => '60',
             ]);
     }
 }

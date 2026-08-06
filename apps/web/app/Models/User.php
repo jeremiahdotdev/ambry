@@ -27,6 +27,10 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'api_day_window_started_at' => 'datetime',
+            'api_day_request_count' => 'integer',
+            'api_minute_window_started_at' => 'datetime',
+            'api_minute_request_count' => 'integer',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];

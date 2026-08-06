@@ -6,7 +6,7 @@ Read-only Go REST API app for the existing Ambry Catholic saints PostgreSQL data
 
 Ambry exposes a read-only REST API for saints, patronages, religious orders, feast days, and Bible verses. The interactive API documentation is available at `/`, and the raw OpenAPI documents are available at `/openapi.json` and `/openapi.yaml`.
 
-All `/api/v1/*` endpoints require a developer API key. Public endpoints are limited to `/health`, `/`, `/openapi.json`, and `/openapi.yaml`.
+All `/api/v1/*` endpoints require a developer API key. Public endpoints are limited to `/health`, `/`, `/openapi.json`, `/openapi.yaml`, and `/schemas/*`.
 
 ### Get an API Key
 
@@ -15,7 +15,7 @@ All `/api/v1/*` endpoints require a developer API key. Public endpoints are limi
 3. Create a key with a descriptive name and optional expiration date.
 4. Copy the token immediately. The full token is shown only once.
 
-Each email can have up to 3 active API keys. Expired or revoked keys do not count against that limit.
+You can create multiple keys for different integrations. Requests from all keys on the same account share the same account-level quota.
 
 ### Authenticate Requests
 
@@ -33,7 +33,7 @@ curl -H 'X-API-Key: saints_test_...' \
   'http://localhost:8080/api/v1/bible-verses?book_code=gen&chapter=1'
 ```
 
-API keys are rate limited to 10 requests per second per key. Requests over the limit return `429 Too Many Requests` with `Retry-After: 1`.
+API access is rate limited per user account: 60 requests per minute and 5,000 requests per day across all keys on the account. Requests over the limit return `429 Too Many Requests` with `Retry-After: 60`.
 
 ## Stack
 

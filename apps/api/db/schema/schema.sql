@@ -138,15 +138,28 @@ create table bible_verses (
     updated_at timestamp not null
 );
 
+create table users (
+    id bigserial primary key,
+    name varchar not null,
+    email varchar not null unique,
+    email_verified_at timestamp,
+    password varchar not null,
+    remember_token varchar(100),
+    api_minute_window_started_at timestamp,
+    api_minute_request_count smallint not null default 0,
+    api_day_window_started_at timestamp,
+    api_day_request_count integer not null default 0,
+    created_at timestamp,
+    updated_at timestamp
+);
+
 create table developer_api_keys (
     id bigserial primary key,
-    user_id bigint not null,
+    user_id bigint not null references users(id) on delete cascade,
     name varchar not null,
     prefix varchar(32) not null,
     token_hash varchar(64) not null unique,
     last_used_at timestamp,
-    request_window_started_at timestamp,
-    request_window_count smallint not null default 0,
     expires_at timestamp,
     revoked_at timestamp,
     created_at timestamp,

@@ -173,9 +173,9 @@ func writeAuthError(w http.ResponseWriter, status int, code, message string) {
 
 func writeRateLimitError(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Retry-After", "1")
+	w.Header().Set("Retry-After", "60")
 	w.WriteHeader(http.StatusTooManyRequests)
-	_, _ = w.Write([]byte(`{"error":{"code":"rate_limit_exceeded","message":"Too many requests for this API key.","details":null}}`))
+	_, _ = w.Write([]byte(`{"error":{"code":"rate_limit_exceeded","message":"Too many requests for this user account.","details":null}}`))
 }
 
 func securityHeaders(next http.Handler) http.Handler {

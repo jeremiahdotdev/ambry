@@ -11,8 +11,6 @@ use Illuminate\View\View;
 
 class DeveloperApiKeyController extends Controller
 {
-    private const MAX_ACTIVE_KEYS_PER_EMAIL = 3;
-
     public function index(Request $request): View
     {
         return view('developers.api-keys.index', [
@@ -33,12 +31,6 @@ class DeveloperApiKeyController extends Controller
         ]);
 
         $user = $request->user();
-
-        if ($user->developerApiKeys()->active()->count() >= self::MAX_ACTIVE_KEYS_PER_EMAIL) {
-            return back()
-                ->withErrors(['name' => 'You can have up to 3 active API keys per email. Revoke an existing key before creating another.'])
-                ->withInput();
-        }
 
         $token = $this->generateToken();
 

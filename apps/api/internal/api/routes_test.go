@@ -246,7 +246,7 @@ func TestAPIKeyRateLimit(t *testing.T) {
 	if rec.Code != http.StatusTooManyRequests {
 		t.Fatalf("expected 429, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if got := rec.Header().Get("Retry-After"); got != "1" {
-		t.Fatalf("expected Retry-After 1, got %q", got)
+	if got := rec.Header().Get("Retry-After"); got != "60" {
+		t.Fatalf("expected Retry-After 60, got %q", got)
 	}
 }

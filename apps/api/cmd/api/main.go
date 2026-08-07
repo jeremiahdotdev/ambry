@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"api/internal/app"
+	internalapi "api/internal"
 	"api/internal/config"
 )
 
@@ -21,7 +21,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	application, err := app.New(ctx, cfg)
+	application, err := internalapi.New(ctx, cfg)
 	if err != nil {
 		config.BootstrapLogger().Error("application initialization failed", "error", err)
 		os.Exit(1)

@@ -124,6 +124,7 @@
     width: min(100%, 48rem);
     gap: 1rem;
     margin: 0 auto;
+    padding-block-start: clamp(0.85rem, 2vw, 1.35rem);
 }
 
 .search-back-link {

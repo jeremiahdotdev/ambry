@@ -52,7 +52,7 @@ API access is rate limited per user account with Upstash Redis: 60 requests per 
 - `api`: Vercel serverless entry point
 - `internal/api`: shared HTTP server assembly, middleware, health route, and route composition
 - `internal/saint`, `internal/patronage`, `internal/religiousorder`, `internal/feastday`: resource models, repositories, services, and Huma route handlers
-- `internal/app`: platform-neutral application construction
+- `internal/api`: server setup and platform-neutral application construction
 - `internal/config` and `internal/database`: configuration and PostgreSQL plumbing
 
 ## Discovered Schema
@@ -278,7 +278,7 @@ The shared handler is platform-neutral. To move later to Railway, Render, Fly.io
 
 ## SQLC
 
-SQL files live in `db/query`. The schema snapshot lives in `db/schema/schema.sql`.
+Feature SQL files live under `internal/repos/*`. The schema snapshot lives in `db/schema/schema.sql`.
 
 ```bash
 make sqlc

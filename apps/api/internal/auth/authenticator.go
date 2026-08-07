@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -25,6 +26,16 @@ var (
 
 const maxRequestsPerDay = 5000
 const maxRequestsPerMinute = 60
+const apiKeyLastUsedWriteInterval = "5 minutes"
+
+//go:embed sql/find_api_key.sql
+var findAPIKeySQL string
+
+//go:embed sql/update_last_used.sql
+var updateLastUsedSQL string
+
+//go:embed scripts/rate_limit.lua
+var upstashRateLimitScript string
 
 type Authenticator interface {
 	Authenticate(ctx context.Context, token string) error
@@ -63,14 +74,7 @@ func (a APIKeyAuthenticator) Authenticate(ctx context.Context, token string) err
 func (a APIKeyAuthenticator) authenticateWithExternalRateLimiter(ctx context.Context, tokenHash string) error {
 	var keyID int64
 	var userID int64
-	err := a.pool.QueryRow(ctx, `
-select id, user_id
-from developer_api_keys
-where token_hash = $1
-	and revoked_at is null
-	and (expires_at is null or expires_at > now())
-limit 1
-`, tokenHash).Scan(&keyID, &userID)
+	err := a.pool.QueryRow(ctx, findAPIKeySQL, tokenHash).Scan(&keyID, &userID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrInvalidToken
 	}
@@ -80,19 +84,13 @@ limit 1
 
 	accepted, err := a.rateLimiter.Allow(ctx, userID)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %v", ErrRateLimiterUnavailable, err)
 	}
 	if !accepted {
 		return ErrRateLimited
 	}
 
-	_, err = a.pool.Exec(ctx, `
-update developer_api_keys
-set
-	last_used_at = now(),
-	updated_at = now()
-where id = $1
-`, keyID)
+	_, err = a.pool.Exec(ctx, updateLastUsedSQL, keyID, apiKeyLastUsedWriteInterval)
 	return err
 }
 
@@ -130,7 +128,11 @@ func (l *UpstashRateLimiter) Allow(ctx context.Context, userID int64) (bool, err
 	minuteKey := fmt.Sprintf("ambry:rate:user:%d:minute:%s", userID, now.Format("200601021504"))
 	dayKey := fmt.Sprintf("ambry:rate:user:%d:day:%s", userID, now.Format("20060102"))
 
-	return l.evalLimit(ctx, minuteKey, dayKey)
+	accepted, err := l.evalLimit(ctx, minuteKey, dayKey)
+	if err != nil {
+		return false, fmt.Errorf("%w: %v", ErrRateLimiterUnavailable, err)
+	}
+	return accepted, nil
 }
 
 func (l *UpstashRateLimiter) evalLimit(ctx context.Context, minuteKey, dayKey string) (bool, error) {
@@ -143,7 +145,7 @@ func (l *UpstashRateLimiter) evalLimit(ctx context.Context, minuteKey, dayKey st
 		maxRequestsPerMinute,
 		maxRequestsPerDay,
 		"70",
-		"90000",
+		"86460",
 	}
 	body, err := json.Marshal(command)
 	if err != nil {
@@ -189,24 +191,7 @@ func (l *UpstashRateLimiter) evalLimit(ctx context.Context, minuteKey, dayKey st
 	}
 }
 
-const upstashRateLimitScript = `
-local minute_count = tonumber(redis.call("GET", KEYS[1]) or "0")
-local day_count = tonumber(redis.call("GET", KEYS[2]) or "0")
-if minute_count >= tonumber(ARGV[1]) or day_count >= tonumber(ARGV[2]) then
-	return 0
-end
-minute_count = redis.call("INCR", KEYS[1])
-if minute_count == 1 then
-	redis.call("EXPIRE", KEYS[1], tonumber(ARGV[3]))
-end
-day_count = redis.call("INCR", KEYS[2])
-if day_count == 1 then
-	redis.call("EXPIRE", KEYS[2], tonumber(ARGV[4]))
-end
-return 1
-`
-
 func HashToken(token string) string {
-	sum := sha256.Sum256([]byte(strings.TrimSpace(token)))
+	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
 }

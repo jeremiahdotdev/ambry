@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -43,6 +44,9 @@ func TestUpstashRateLimiterAllowsAccountWhenRedisReturnsOne(t *testing.T) {
 	if command[4] != "ambry:rate:user:42:day:20260805" {
 		t.Fatalf("unexpected day key: %#v", command[4])
 	}
+	if command[8] != "86460" {
+		t.Fatalf("unexpected day ttl: %#v", command[8])
+	}
 }
 
 func TestUpstashRateLimiterRejectsAccountWhenRedisReturnsZero(t *testing.T) {
@@ -57,5 +61,24 @@ func TestUpstashRateLimiterRejectsAccountWhenRedisReturnsZero(t *testing.T) {
 	}
 	if accepted {
 		t.Fatal("expected request to be rejected")
+	}
+}
+
+func TestUpstashRateLimiterReturnsUnavailableForTransportErrors(t *testing.T) {
+	limiter := NewUpstashRateLimiter("http://127.0.0.1:1", "test-token")
+	limiter.httpClient.Timeout = time.Millisecond
+
+	_, err := limiter.Allow(t.Context(), 42)
+	if !errors.Is(err, ErrRateLimiterUnavailable) {
+		t.Fatalf("expected ErrRateLimiterUnavailable, got %v", err)
+	}
+}
+
+func TestHashTokenHashesExactBytes(t *testing.T) {
+	withSpaces := HashToken(" saints_test_exact ")
+	withoutSpaces := HashToken("saints_test_exact")
+
+	if withSpaces == withoutSpaces {
+		t.Fatal("expected HashToken to preserve leading and trailing spaces")
 	}
 }

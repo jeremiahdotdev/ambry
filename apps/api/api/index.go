@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"api/internal/app"
+	internalapi "api/internal"
 	"api/internal/config"
 )
 
@@ -26,7 +26,7 @@ type runtime struct {
 func newRuntime() *runtime {
 	return &runtime{
 		build: func(ctx context.Context, cfg config.Config) (http.Handler, error) {
-			application, err := app.New(ctx, cfg)
+			application, err := internalapi.New(ctx, cfg)
 			if err != nil {
 				return nil, err
 			}
@@ -63,7 +63,7 @@ func (rt *runtime) get() (http.Handler, error) {
 		rt.ready = true
 		return nil, err
 	}
-	initCtx, cancel := app.InitContext(cfg.DatabaseConnectTimeout)
+	initCtx, cancel := internalapi.InitContext(cfg.DatabaseConnectTimeout)
 	defer cancel()
 	handler, err := rt.build(initCtx, cfg)
 	if err != nil {

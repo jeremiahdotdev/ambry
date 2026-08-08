@@ -41,6 +41,12 @@ const bearerAuthDescription = "Use the developer API key created at /developers/
 
 func NewServer(opts ServerOptions) Server {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /favicon.png", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		_, _ = w.Write(docs.FaviconPNG)
+	})
+
 	humaConfig := huma.DefaultConfig("✣ Ambry API", "1.0.0")
 	humaConfig.Info.Description = strings.TrimSpace(docs.OverviewMarkdown)
 	humaConfig.Tags = []*huma.Tag{
@@ -60,6 +66,7 @@ func NewServer(opts ServerOptions) Server {
 		"hideDarkModeToggle": false,
 		"hideModels":         false,
 		"withDefaultFonts":   false,
+		"favicon":            "/favicon.png",
 		"customCss":          docs.CustomCSS,
 	}
 	humaConfig.Components.SecuritySchemes = map[string]*huma.SecurityScheme{

@@ -1,6 +1,7 @@
 package docs
 
 import (
+	_ "embed"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -10,6 +11,9 @@ import (
 var CustomCSS = readSiblingFile("css", "docs.css")
 
 var OverviewMarkdown = readSiblingFile("md", "overview.md")
+
+//go:embed favicon.png
+var FaviconPNG []byte
 
 func readSiblingFile(parts ...string) string {
 	_, file, _, ok := runtime.Caller(0)

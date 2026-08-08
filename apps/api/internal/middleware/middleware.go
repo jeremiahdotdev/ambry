@@ -108,6 +108,7 @@ func knownRouteGuard(next http.Handler) http.Handler {
 		path := r.URL.Path
 		if path == "/" ||
 			path == "/health" ||
+			path == "/favicon.png" ||
 			path == "/openapi.json" ||
 			path == "/openapi.yaml" ||
 			strings.HasPrefix(path, "/schemas/") ||

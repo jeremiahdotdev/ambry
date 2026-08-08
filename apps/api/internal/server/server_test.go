@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"api/internal/repos/bibleverse"
 	"api/internal/config"
 	"api/internal/database"
+	"api/internal/repos/bibleverse"
 	"api/internal/repos/feastday"
 	"api/internal/repos/patronage"
 	"api/internal/repos/religiousorder"
@@ -83,7 +83,7 @@ func TestDocsUseAmbryOverviewAndTheme(t *testing.T) {
 		t.Fatalf("expected docs 200, got %d", docsRec.Code)
 	}
 	docsBody := docsRec.Body.String()
-	for _, expected := range []string{"@scalar/api-reference", "customCss", "hideModels", "false", "#1d0618", "#fff9ef"} {
+	for _, expected := range []string{"@scalar/api-reference", "customCss", "hideModels", "favicon.png", "false", "#1d0618", "#fff9ef"} {
 		if !strings.Contains(docsBody, expected) {
 			t.Fatalf("expected docs body to contain %q", expected)
 		}
@@ -123,6 +123,22 @@ func TestDocsUseAmbryOverviewAndTheme(t *testing.T) {
 	}
 	if !documentContainsEnumValue(document, "gen") || !documentContainsEnumValue(document, "Revelation") {
 		t.Fatal("expected OpenAPI document to contain Bible book code and name enum values")
+	}
+}
+
+func TestFaviconRoute(t *testing.T) {
+	server := testServer(okHealth{})
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/favicon.png", nil)
+	server.Handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if got := rec.Header().Get("Content-Type"); got != "image/png" {
+		t.Fatalf("unexpected content type: %q", got)
+	}
+	if rec.Body.Len() == 0 {
+		t.Fatal("expected favicon response body")
 	}
 }
 

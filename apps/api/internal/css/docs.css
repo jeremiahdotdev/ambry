@@ -24,6 +24,19 @@
   --scalar-border-color: #eadbc6;
 }
 
+.light-mode .dark-mode pre,
+.light-mode .dark-mode code,
+.light-mode .dark-mode .cm-editor,
+.light-mode .dark-mode .hljs {
+  background: var(--scalar-background-2) !important;
+  color: var(--scalar-color-1) !important;
+}
+
+.light-mode .dark-mode pre,
+.light-mode .dark-mode .cm-editor {
+  border-color: var(--scalar-border-color) !important;
+}
+
 .dark-mode {
   --scalar-heading-1: 28px;
   --scalar-color-1: #fff8ed;

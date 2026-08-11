@@ -6,18 +6,16 @@
 @if ($sections !== [])
     <div class="saint-intro saint-biography-sections">
         @foreach ($sections as $section)
-            <section class="saint-biography-section {{ ($section['kind'] ?? 'body') === 'sources' ? 'saint-biography-section--sources' : '' }}">
+            @php
+                $kind = $section['kind'] ?? 'body';
+                $isSourcesSection = $kind === 'sources';
+            @endphp
+
+            <section class="saint-biography-section {{ $isSourcesSection ? 'saint-biography-section--sources' : '' }}">
                 @php
-                    $kind = $section['kind'] ?? 'body';
                     $body = (string) ($section['body_html'] ?? $section['body'] ?? '');
                     $bodyIsHtml = filled($section['body_html'] ?? null);
-                    $usesSourceEntries = false;
-                    $displayParagraphs = $kind === 'sources'
-                        ? []
-                        : ($usesSourceEntries
-                        ? $section['source_entries']
-                        : preg_split('/\R{2,}/', $body));
-                    $renderHtml = $bodyIsHtml && ! $usesSourceEntries;
+                    $displayParagraphs = $isSourcesSection ? [] : preg_split('/\R{2,}/', $body);
                     $sectionHeading = trim((string) ($section['heading'] ?? ''));
                     $normalizeHeading = fn ($value) => strtolower(preg_replace(
                         '/\s+/',
@@ -41,14 +39,14 @@
                     @php
                         $paragraphText = is_array($paragraph) ? (string) ($paragraph['text'] ?? '') : (string) $paragraph;
                         $paragraphHtml = is_array($paragraph) ? (string) ($paragraph['html'] ?? $paragraphText) : (string) $paragraph;
-                        $renderedParagraph = ($renderHtml || $usesSourceEntries) ? $paragraphHtml : $paragraphText;
+                        $renderedParagraph = $bodyIsHtml ? $paragraphHtml : $paragraphText;
                     @endphp
 
                     @if (filled(trim($paragraphText)))
                         <p>
                             @foreach (preg_split('/(\[source:\d+\])/', trim($renderedParagraph), -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) ?: [] as $part)
                                 @if (! preg_match('/^\[source:\d+\]$/', $part))
-                                    @if ($renderHtml || $usesSourceEntries)
+                                    @if ($bodyIsHtml)
                                         {!! $part !!}
                                     @else
                                         {{ $part }}
@@ -59,7 +57,7 @@
                     @endif
                 @endforeach
 
-                @if ($kind === 'sources')
+                @if ($isSourcesSection)
                     @if (filled($section['pageSource']['url'] ?? null))
                         <p class="saint-source-document">
                             <a href="{{ $section['pageSource']['url'] }}" target="_blank" rel="noreferrer">

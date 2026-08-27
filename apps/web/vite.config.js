@@ -20,6 +20,7 @@ export default defineConfig({
                 'resources/js/search/index.js',
                 'resources/css/saints/index.css',
                 'resources/css/saints/profile.css',
+                'resources/css/saints/editor.css',
                 'resources/css/components/circles/bisected.css',
                 'resources/css/saints/image-block.css',
                 'resources/css/saints/copy-panel.css',

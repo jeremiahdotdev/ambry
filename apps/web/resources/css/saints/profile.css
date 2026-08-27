@@ -1,7 +1,7 @@
-.saint-backlink {
+.saint-backlink,
+.saint-edit-fab {
     position: absolute;
     top: 1rem;
-    left: 1rem;
     z-index: 20;
     display: inline-flex;
     align-items: center;
@@ -15,6 +15,14 @@
     text-decoration: none;
     box-shadow: 0 0.5rem 1.5rem rgb(32 37 45 / 8%);
     backdrop-filter: blur(8px);
+}
+
+.saint-backlink {
+    left: 1rem;
+}
+
+.saint-edit-fab {
+    right: 1rem;
 }
 
 .saint-backlink span[aria-hidden="true"] {
@@ -52,7 +60,8 @@
 }
 
 @media (min-width: 781px) {
-    .saint-backlink {
+    .saint-backlink,
+    .saint-edit-fab {
         position: fixed;
     }
 

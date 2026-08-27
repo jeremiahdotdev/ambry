@@ -31,6 +31,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route('developers.api-keys.index');
+        return redirect()->intended(route('developers.api-keys.index'));
     }
 }

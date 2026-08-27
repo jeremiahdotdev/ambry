@@ -3,6 +3,7 @@
 
     $subtitle ??= null;
     $variant ??= 'classic';
+    $canEditSaints ??= false;
     $hasCustomImage = file_exists(public_path("saints/{$saint->slug}.png"));
     $variants = SaintPageVariants::all($saint->slug);
     $layout = $variants[$variant] ?? $variants[SaintPageVariants::defaultForSlug($saint->slug)];
@@ -15,6 +16,12 @@
     style="--saint-page-start: {{ $scheme['pageStart'] }}; --saint-page-mid: {{ $scheme['pageMid'] }}; --saint-page-end: {{ $scheme['pageEnd'] }}; --saint-card: {{ $scheme['card'] }}; --saint-border: {{ $scheme['border'] }}; --saint-text: {{ $scheme['text'] }}; --saint-accent: {{ $scheme['accent'] }}; --saint-backdrop: {{ $scheme['backdrop'] }};"
 >
     @include('components.back-to-search', ['class' => 'saint-backlink'])
+
+    @if ($canEditSaints)
+        <a class="saint-edit-fab" href="{{ route('saints.edit', $saint) }}" aria-label="Edit {{ $saint->displayName() }}">
+            Edit Saint
+        </a>
+    @endif
 
     @foreach ($layout['circles'] as $circle)
         @php

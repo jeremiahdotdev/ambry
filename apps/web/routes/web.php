@@ -3,6 +3,8 @@
 use App\Http\Controllers\AuthenticatedSessionController;
 use App\Http\Controllers\DeveloperApiKeyController;
 use App\Http\Controllers\RegisteredUserController;
+use App\Http\Controllers\SaintEditController;
+use App\Http\Controllers\SaintEditorStaffController;
 use App\Http\Controllers\SaintProfileController;
 use App\Http\Controllers\SearchController;
 use App\Support\GeneratedSaintImages;
@@ -35,9 +37,19 @@ Route::get('/generated/saints/{slug}/{kind}', function (string $slug, string $ki
     ->where('slug', '[A-Za-z0-9-]+')
     ->where('kind', 'portrait|thumb|original')
     ->name('generated.saint-image');
-Route::get('/saints/{saint:slug}', [SaintProfileController::class, 'profile'])->name('saints.profile');
 
 Route::middleware('auth')->group(function (): void {
+    Route::get('/saints/edit-staff', [SaintEditorStaffController::class, 'index'])
+        ->name('saints.edit-staff.index');
+    Route::post('/saints/edit-staff', [SaintEditorStaffController::class, 'store'])
+        ->name('saints.edit-staff.store');
+    Route::delete('/saints/edit-staff/{permission}', [SaintEditorStaffController::class, 'destroy'])
+        ->name('saints.edit-staff.destroy');
+    Route::get('/saints/{saint:slug}/edit', [SaintEditController::class, 'edit'])
+        ->name('saints.edit');
+    Route::patch('/saints/{saint:slug}', [SaintEditController::class, 'update'])
+        ->name('saints.update');
+
     Route::redirect('/developers', '/developers/api-keys')
         ->name('developers.index');
     Route::get('/developers/api-keys', [DeveloperApiKeyController::class, 'index'])
@@ -47,3 +59,5 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/developers/api-keys/{apiKey}', [DeveloperApiKeyController::class, 'destroy'])
         ->name('developers.api-keys.destroy');
 });
+
+Route::get('/saints/{saint:slug}', [SaintProfileController::class, 'profile'])->name('saints.profile');

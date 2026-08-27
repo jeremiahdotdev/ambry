@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+@php($canEditSaints ??= false)
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -17,6 +18,6 @@
     ])
 </head>
 <body class="saint-profile-body">
-    @include('saints.profile', ['saint' => $saint, 'subtitle' => $subtitle, 'variant' => $variant])
+    @include('saints.profile', ['saint' => $saint, 'canEditSaints' => $canEditSaints, 'subtitle' => $subtitle, 'variant' => $variant])
 </body>
 </html>

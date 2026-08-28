@@ -187,23 +187,10 @@
     flex: 1 1 auto;
 }
 
-.saint-editor-actions button,
-.saint-staff-form button,
-.saint-editor-danger-button {
+.saint-editor-actions .form-button,
+.saint-staff-form .form-button,
+.saint-staff-row .form-button {
     min-height: 3.15rem;
-}
-
-.saint-editor-danger-button {
-    background: #b51624;
-    color: #fffaf0;
-    box-shadow:
-        0 0.55rem 1rem rgb(138 31 31 / 20%),
-        inset 0 1px 0 rgb(255 255 255 / 14%);
-}
-
-.saint-editor-danger-button:hover,
-.saint-editor-danger-button:focus-visible {
-    background: #8f101b;
 }
 
 .saint-editor-section-heading span {
@@ -276,11 +263,11 @@
         flex-direction: column;
     }
 
-    .saint-editor-actions button,
+    .saint-editor-actions .form-button,
     .saint-editor-actions a,
     .saint-editor-nav a,
-    .saint-staff-form button,
-    .saint-editor-danger-button {
+    .saint-staff-form .form-button,
+    .saint-staff-row .form-button {
         width: 100%;
         text-align: center;
     }

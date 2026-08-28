@@ -156,7 +156,7 @@
             </section>
 
             <div class="saint-editor-actions">
-                <button type="submit">Save Saint</button>
+                <x-form.button>Save Saint</x-form.button>
                 <a href="{{ route('saints.profile', $saint) }}">Cancel</a>
             </div>
         </form>

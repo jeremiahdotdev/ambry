@@ -2,24 +2,46 @@
     min-height: 3.15rem;
     border: 0;
     border-radius: 6px;
-    background: #5b1d4d;
-    color: #fffaf0;
+    background: var(--form-button-background);
+    color: var(--form-button-color);
     cursor: pointer;
     font: inherit;
     font-weight: 800;
     padding: 0 1.1rem;
     box-shadow:
-        0 0.55rem 1rem rgb(74 24 63 / 18%),
+        0 0.55rem 1rem var(--form-button-shadow),
         inset 0 1px 0 rgb(255 255 255 / 14%);
+    transition:
+        background-color 120ms ease,
+        box-shadow 120ms ease,
+        transform 120ms ease;
+}
+
+.form-button-primary {
+    --form-button-background: #5b1d4d;
+    --form-button-color: #fffaf0;
+    --form-button-hover-background: #49173d;
+    --form-button-active-background: #35102d;
+    --form-button-shadow: rgb(74 24 63 / 18%);
+}
+
+.form-button-danger {
+    --form-button-background: #b51624;
+    --form-button-color: #fffaf0;
+    --form-button-hover-background: #8f101b;
+    --form-button-active-background: #680a12;
+    --form-button-shadow: rgb(138 31 31 / 20%);
 }
 
 .form-button:hover,
 .form-button:focus-visible {
-    background: #49173d;
+    background: var(--form-button-hover-background);
 }
 
 .form-button:active {
+    background: var(--form-button-active-background);
     box-shadow:
-        0 0.22rem 0.45rem rgb(74 24 63 / 18%),
+        0 0.22rem 0.45rem var(--form-button-shadow),
         inset 0 0.18rem 0.45rem rgba(30, 8, 33, 0.28);
+    transform: translateY(1px);
 }

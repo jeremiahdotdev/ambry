@@ -42,7 +42,7 @@
                     <span>Email</span>
                     <input name="email" type="email" value="{{ old('email') }}" maxlength="255" required>
                 </label>
-                <button type="submit">Add Email</button>
+                <x-form.button>Add Email</x-form.button>
             </form>
         </section>
 
@@ -66,7 +66,7 @@
                             <form method="POST" action="{{ route('saints.edit-staff.destroy', $permission) }}">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="saint-editor-danger-button">Remove</button>
+                                <x-form.button variant="danger">Remove</x-form.button>
                             </form>
                         @endif
                     </article>

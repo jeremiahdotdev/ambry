@@ -188,19 +188,6 @@
     color: #8a1f1f;
 }
 
-.developer-danger-button {
-    background: #b51624;
-    color: #fffaf0;
-    box-shadow:
-        0 0.55rem 1rem rgb(138 31 31 / 20%),
-        inset 0 1px 0 rgb(255 255 255 / 14%);
-}
-
-.developer-danger-button:hover,
-.developer-danger-button:focus-visible {
-    background: #8f101b;
-}
-
 @media (max-width: 820px) {
     .developer-form,
     .developer-key,
@@ -222,7 +209,7 @@
 
     .developer-docs-link,
     .developer-form .form-button,
-    .developer-danger-button {
+    .developer-key .form-button {
         width: 100%;
         text-align: center;
     }

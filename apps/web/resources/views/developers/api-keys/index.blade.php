@@ -110,7 +110,7 @@
                                 <form method="POST" action="{{ route('developers.api-keys.destroy', $apiKey) }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="developer-danger-button">Revoke</button>
+                                    <x-form.button variant="danger">Revoke</x-form.button>
                                 </form>
                             @endif
                         </article>

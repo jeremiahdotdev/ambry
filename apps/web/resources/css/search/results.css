@@ -359,6 +359,12 @@
 .search-result-patronages {
     display: flex;
     flex-wrap: wrap;
+    position: absolute;
+    z-index: 12;
+    bottom: 8px;
+    left: 0.5rem;
+    right: 0.5rem;
+    justify-content: flex-end;
     gap: 0.35rem;
 }
 
@@ -587,12 +593,4 @@
         left: 0;
     }
 
-    .search-result-patronages {
-        position: absolute;
-        z-index: 12;
-        bottom: 8px;
-        left: 0.5rem;
-        right: 0.5rem;
-        justify-content: flex-end;
-    }
 }

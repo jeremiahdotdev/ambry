@@ -120,6 +120,8 @@ That script normalizes stored `life_dates` values by appending `AD` to dated str
 
 The web app keeps its `vercel.json` in `apps/web`. Deploy it as a Vercel project with the project root set to `apps/web`.
 
+The frontend bundle does not import Composer dependencies. Laravel serves Livewire and Alpine through `@livewireScripts` at runtime, and `resources/js/app.js` registers components on `livewire:init`. This lets Vite build before the PHP runtime installs Composer packages.
+
 The Go API has its own `apps/api/vercel.json`. Deploy it as a separate Vercel project with the project root set to `apps/api`, or use its Dockerfile on a conventional host.
 
 Both apps should point at the same production database, but only the Laravel app should run migrations.

@@ -47,6 +47,6 @@
         @include('components.circles.search', ['variant' => 'blue'])
         {{ $circles ?? '' }}
     </main>
-    @livewireScriptConfig
+    @livewireScripts
 </body>
 </html>

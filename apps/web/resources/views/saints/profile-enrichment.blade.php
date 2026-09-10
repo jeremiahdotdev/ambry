@@ -80,9 +80,9 @@
                 <div class="saint-profile-chip-list">
                     @foreach ($relatedSaints as $relatedSaint)
                         @if (filled($relatedSaint['slug'] ?? null))
-                            <a href="{{ route('saints.profile', ['saint' => $relatedSaint['slug']]) }}">{{ $relatedSaint['name'] }}</a>
+                            <a wire:navigate href="{{ route('saints.profile', ['saint' => $relatedSaint['slug']]) }}">{{ $relatedSaint['name'] }}</a>
                         @else
-                            <a href="{{ route('search.results', ['q' => $relatedSaint['name']]) }}">{{ $relatedSaint['name'] }}</a>
+                            <a wire:navigate href="{{ route('search.results', ['q' => $relatedSaint['name']]) }}">{{ $relatedSaint['name'] }}</a>
                         @endif
                     @endforeach
                 </div>

@@ -12,7 +12,7 @@
             <ul>
                 @foreach ($saint->patronages as $patronage)
                     <li>
-                        <a href="{{ route('search.results', ['q' => $patronage->name]) }}">{{ $patronage->name }}</a>
+                        <a wire:navigate href="{{ route('search.results', ['q' => $patronage->name]) }}">{{ $patronage->name }}</a>
                     </li>
                 @endforeach
             </ul>

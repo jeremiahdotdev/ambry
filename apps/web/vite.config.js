@@ -17,7 +17,7 @@ export default defineConfig({
                 'resources/css/search/results.css',
                 'resources/css/developers/auth.css',
                 'resources/css/developers/api-keys.css',
-                'resources/js/search/index.js',
+                'resources/js/app.js',
                 'resources/css/saints/index.css',
                 'resources/css/saints/profile.css',
                 'resources/css/saints/editor.css',

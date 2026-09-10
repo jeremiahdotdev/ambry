@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\DeveloperApiKey;
+use App\Services\DeveloperApiKeyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class DeveloperApiKeyController extends Controller
@@ -30,18 +29,7 @@ class DeveloperApiKeyController extends Controller
             'expires_at' => ['nullable', 'date', 'after:today'],
         ]);
 
-        $user = $request->user();
-
-        $token = $this->generateToken();
-
-        $user->developerApiKeys()->create([
-            'name' => $validated['name'],
-            'prefix' => substr($token, 0, 24),
-            'token_hash' => DeveloperApiKey::hashToken($token),
-            'expires_at' => isset($validated['expires_at'])
-                ? Carbon::parse($validated['expires_at'])->endOfDay()
-                : null,
-        ]);
+        $token = app(DeveloperApiKeyService::class)->create($request->user(), $validated);
 
         return redirect()
             ->route('developers.api-keys.index')
@@ -59,12 +47,5 @@ class DeveloperApiKeyController extends Controller
         return redirect()
             ->route('developers.api-keys.index')
             ->with('status', 'API key revoked.');
-    }
-
-    private function generateToken(): string
-    {
-        $environment = app()->isProduction() ? 'live' : 'test';
-
-        return sprintf('saints_%s_%s', $environment, Str::lower(bin2hex(random_bytes(32))));
     }
 }

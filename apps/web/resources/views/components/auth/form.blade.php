@@ -15,12 +15,13 @@
         </div>
     @endif
 
-    <form method="{{ $method }}" action="{{ $action }}" class="developer-auth-form">
+    <form {{ $attributes }} method="{{ $method }}" action="{{ $action }}" class="developer-auth-form">
         @csrf
 
         {{ $slot }}
 
         <x-form.button>{{ $submit }}</x-form.button>
+        <span wire:loading role="status">Submitting…</span>
     </form>
 
     @isset($footer)

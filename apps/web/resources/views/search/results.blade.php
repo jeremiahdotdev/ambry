@@ -17,24 +17,24 @@
                 : null;
         @endphp
 
-        <article class="search-result {{ $hasPatronages ? '' : 'search-result--without-patronages' }}">
+        <article wire:key="saint-{{ $saint->id }}" class="search-result {{ $hasPatronages ? '' : 'search-result--without-patronages' }}">
             @if ($saint->is_martyr || $primaryTemperament)
                 <span class="search-result-indicators">
                     @if ($saint->is_martyr)
-                    <button class="search-result-indicator search-result-indicator--martyr" type="button" aria-label="martyr" data-search-result-indicator>
+                    <button class="search-result-indicator search-result-indicator--martyr" type="button" aria-label="martyr" x-data="{ open: false }" :class="{ 'is-open': open }" @click.stop="const next = !open; $dispatch('close-indicators'); open = next" @close-indicators.window="open = false" @click.outside="open = false" @keydown.escape.window="open = false" :aria-expanded="open" data-search-result-indicator>
                         <i data-lucide="flame" aria-hidden="true"></i>
                         <span class="search-result-indicator-popover" role="tooltip">martyr</span>
                     </button>
                     @endif
                     @if ($primaryTemperament)
-                        <button class="search-result-indicator search-result-indicator--temperament {{ $primaryTemperamentClass }}" type="button" aria-label="temperament: {{ $primaryTemperament }}" data-search-result-indicator>
+                        <button class="search-result-indicator search-result-indicator--temperament {{ $primaryTemperamentClass }}" type="button" aria-label="temperament: {{ $primaryTemperament }}" x-data="{ open: false }" :class="{ 'is-open': open }" @click.stop="const next = !open; $dispatch('close-indicators'); open = next" @close-indicators.window="open = false" @click.outside="open = false" @keydown.escape.window="open = false" :aria-expanded="open" data-search-result-indicator>
                             <i data-lucide="sparkles" aria-hidden="true"></i>
                             <span class="search-result-indicator-popover" role="tooltip">{{ $primaryTemperament }}</span>
                         </button>
                     @endif
                 </span>
             @endif
-            <a class="search-result-link" href="{{ route('saints.profile', $saint) }}">
+            <a wire:navigate class="search-result-link" href="{{ route('saints.profile', $saint) }}">
                 <span class="search-result-image-wrapper">
                     <img class="search-result-image" src="{{ $imageUrl }}" alt="">
                 </span>
@@ -65,7 +65,7 @@
             </a>
         </article>
     @empty
-        <p class="search-empty">No {{ strtolower($selectedPopularLabel ?? $selectedTypePlural) }} matched.</p>
+        <x-search.no-results :subject="strtolower($selectedPopularLabel ?? $selectedTypePlural)" />
     @endforelse
 </section>
 
@@ -77,7 +77,7 @@
                 <span>1</span>
             </span>
         @else
-            <a class="search-pagination-link" href="{{ $results->previousPageUrl() }}" rel="prev" aria-label="Previous page, page {{ $results->currentPage() - 1 }}">
+            <a class="search-pagination-link" wire:click.prevent="previousPage" href="{{ $results->previousPageUrl() }}" rel="prev" aria-label="Previous page, page {{ $results->currentPage() - 1 }}">
                 <span aria-hidden="true">←</span>
                 <span>{{ $results->currentPage() - 1 }}</span>
             </a>
@@ -86,7 +86,7 @@
         <span class="search-pagination-page is-current" aria-current="page">{{ $results->currentPage() }}</span>
 
         @if ($results->hasMorePages())
-            <a class="search-pagination-link" href="{{ $results->nextPageUrl() }}" rel="next" aria-label="Next page, page {{ $results->currentPage() + 1 }}">
+            <a class="search-pagination-link" wire:click.prevent="nextPage" href="{{ $results->nextPageUrl() }}" rel="next" aria-label="Next page, page {{ $results->currentPage() + 1 }}">
                 <span>{{ $results->currentPage() + 1 }}</span>
                 <span aria-hidden="true">→</span>
             </a>

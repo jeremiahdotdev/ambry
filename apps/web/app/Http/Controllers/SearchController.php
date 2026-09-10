@@ -3,122 +3,45 @@
 namespace App\Http\Controllers;
 
 use App\Services\SaintSearchService;
+use App\Support\SearchFilters;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SearchController extends Controller
 {
-    private const RESULTS_PER_PAGE = 10;
-
-    private const SEARCH_TYPES = [
-        'saint' => 'Saint',
-        'pope' => 'Pope',
-        'blessed' => 'Blessed',
-        'venerable' => 'Venerable',
-    ];
-
-    private const POPULAR_SEARCHES = [
-        'patrons' => [
-            'label' => 'Patron Saints',
-            'icon' => 'shield-check',
-        ],
-        'martyrs' => [
-            'label' => 'Martyrs',
-            'icon' => 'flame',
-        ],
-        'men' => [
-            'label' => 'Men',
-            'icon' => 'mars',
-        ],
-        'women' => [
-            'label' => 'Women',
-            'icon' => 'venus',
-        ],
-        'doctors' => [
-            'label' => 'Doctors',
-            'icon' => 'graduation-cap',
-        ],
-    ];
-
     public function __construct(
         private readonly SaintSearchService $saintSearch,
+        private readonly SearchFilters $filters,
     ) {}
 
-    public function index(Request $request): View
+    public function index(): View
     {
-        $selectedType = $this->selectedType($request);
-        $selectedPopularSearch = $this->selectedPopularSearch($request);
-
-        return view('search.index', [
-            'query' => '',
-            'results' => [],
-            'searched' => false,
-            'error' => null,
-            'selectedType' => $selectedType,
-            'searchTypes' => self::SEARCH_TYPES,
-            'popularSearches' => self::POPULAR_SEARCHES,
-            'selectedPopularSearch' => $selectedPopularSearch,
-        ]);
+        return view('search.index');
     }
 
-    public function search(Request $request): View
+    public function search(): View
     {
-        [$query, $selectedType] = $this->normalizedQueryAndType($request);
-        $selectedPopularSearch = $this->selectedPopularSearch($request);
-
-        return view('search.results-page', [
-            'query' => $query,
-            'results' => $this->saintSearch
-                ->search($query, type: $selectedType, popular: $selectedPopularSearch, perPage: self::RESULTS_PER_PAGE, with: ['patronages'])
-                ->withQueryString(),
-            'searched' => true,
-            'error' => null,
-            'selectedType' => $selectedType,
-            'searchTypes' => self::SEARCH_TYPES,
-            'popularSearches' => self::POPULAR_SEARCHES,
-            'selectedPopularSearch' => $selectedPopularSearch,
-        ]);
+        return view('search.results-page');
     }
 
-    private function selectedType(Request $request): string
+    public function suggestions(Request $request): JsonResponse
     {
-        $rawType = (string) $request->query('type', 'saint');
-        $selectedType = array_key_exists($rawType, self::SEARCH_TYPES) ? $rawType : 'saint';
+        $request->validate(['q' => 'nullable|string|max:200', 'type' => 'nullable|string', 'popular' => 'nullable|string']);
+        [$query, $type] = $this->filters->normalizedQueryAndType((string) $request->query('q'), (string) $request->query('type', 'saint'));
 
-        return $selectedType;
-    }
-
-    private function selectedPopularSearch(Request $request): ?string
-    {
-        $popularSearch = (string) $request->query('popular', '');
-
-        return array_key_exists($popularSearch, self::POPULAR_SEARCHES) ? $popularSearch : null;
-    }
-
-    /**
-     * @return array{0: string, 1: string}
-     */
-    private function normalizedQueryAndType(Request $request): array
-    {
-        $query = trim((string) $request->query('q'));
-        $selectedType = $this->selectedType($request);
-        $prefixType = null;
-
-        while (preg_match('/^(st|saint|pope|bl|blessed|ven|venerable)\.?\s+/iu', $query, $matches) === 1) {
-            $prefixType ??= $this->typeForSearchPrefix($matches[1]);
-            $query = trim((string) preg_replace('/^'.preg_quote($matches[0], '/').'/u', '', $query));
+        if (mb_strlen($query) < 2) {
+            return response()->json(['suggestions' => []]);
         }
 
-        return [$query, $prefixType ?? $selectedType];
-    }
+        $results = $this->saintSearch->search(
+            $query, type: $type, popular: $this->filters->selectedPopularSearch((string) $request->query('popular', '')), with: [], limit: 6,
+        );
 
-    private function typeForSearchPrefix(string $prefix): string
-    {
-        return match (strtolower(rtrim($prefix, '.'))) {
-            'pope' => 'pope',
-            'bl', 'blessed' => 'blessed',
-            'ven', 'venerable' => 'venerable',
-            default => 'saint',
-        };
+        return response()->json(['suggestions' => $results->map(fn ($saint) => [
+            'name' => $saint->displayName(),
+            'type' => SearchFilters::SEARCH_TYPES[$saint->canonical_status] ?? 'Saint',
+            'url' => route('saints.profile', $saint),
+        ])]);
     }
 }

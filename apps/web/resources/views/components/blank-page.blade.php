@@ -16,12 +16,14 @@
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     @vite(array_values(array_unique(array_merge([
         'resources/css/app.css',
+        'resources/js/app.js',
         'resources/css/search/index.css',
         'resources/css/search/nav.css',
         'resources/css/components/circles/search.css',
         'resources/css/components/form-input.css',
         'resources/css/components/form-button.css',
     ], $assets))))
+    @livewireStyles
 </head>
 <body class="{{ $bodyClass }}">
     <main class="search-page {{ $pageClass }}">
@@ -45,5 +47,6 @@
         @include('components.circles.search', ['variant' => 'blue'])
         {{ $circles ?? '' }}
     </main>
+    @livewireScriptConfig
 </body>
 </html>

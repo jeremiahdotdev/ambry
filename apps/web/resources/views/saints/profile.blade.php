@@ -18,7 +18,7 @@
     @include('components.back-to-search', ['class' => 'saint-backlink'])
 
     @if ($canEditSaints)
-        <a class="saint-edit-fab" href="{{ route('saints.edit', $saint) }}" aria-label="Edit {{ $saint->displayName() }}">
+        <a wire:navigate class="saint-edit-fab" href="{{ route('saints.edit', $saint) }}" aria-label="Edit {{ $saint->displayName() }}">
             Edit Saint
         </a>
     @endif

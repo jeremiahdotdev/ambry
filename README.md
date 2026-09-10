@@ -50,6 +50,18 @@ php artisan serve
 npm run dev
 ```
 
+## Web Frontend
+
+The web app uses Livewire 4 with Blade templates. Interactive components live in
+`apps/web/app/Livewire` and `apps/web/resources/views/livewire`: search and suggestions,
+results pagination, saint editing, editor staff, API keys, login, and signup.
+Internal links use `wire:navigate`; Alpine handles dropdowns and keyboard interactions.
+
+The shared JavaScript entry bundles Livewire and its Alpine instance through Vite.
+Layouts use `@livewireScriptConfig`; do not load a second copy of Alpine or Livewire.
+Controllers still serve the page shells and existing HTTP endpoints, while shared
+services handle search, permissions, saint updates, and API key creation.
+
 ## Go API Development
 
 ```bash

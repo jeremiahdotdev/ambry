@@ -28,8 +28,8 @@ class SaintSearchService
         ?string $popular = null,
         ?int $perPage = null,
         ?array $with = null,
-    ): Collection|LengthAwarePaginator|Paginator
-    {
+        int $limit = 50,
+    ): Collection|LengthAwarePaginator|Paginator {
         $normalizedQuery = trim((string) $query);
         $normalizedType = trim((string) $type);
         $normalizedPopular = trim((string) $popular);
@@ -83,7 +83,7 @@ class SaintSearchService
             return $search->simplePaginate($perPage);
         }
 
-        return $search->limit(50)->get();
+        return $search->limit($limit)->get();
     }
 
     /**

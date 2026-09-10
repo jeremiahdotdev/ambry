@@ -22,4 +22,5 @@
         @if ($maxlength) maxlength="{{ $maxlength }}" @endif
         {{ $attributes->class('form-input-control') }}
     >
+    @error($name) <span class="field-error" role="alert">{{ $message }}</span> @enderror
 </div>

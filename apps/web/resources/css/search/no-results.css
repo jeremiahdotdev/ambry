@@ -1,0 +1,30 @@
+.search-no-results {
+    width: 100%;
+    padding: 1.75rem 1.25rem;
+    border: 1px solid #dcc39a;
+    border-radius: 1.5rem;
+    background: linear-gradient(135deg, #fff9ee, #f5e7d2);
+    box-shadow: inset 0 0 0 5px rgb(255 249 238 / 70%), 0 8px 24px rgb(73 40 34 / 6%);
+    text-align: center;
+}
+
+.search-no-results-ornament {
+    display: block;
+    color: #a87735;
+    font-size: 2.5rem;
+    line-height: 1;
+    margin-bottom: 0.75rem;
+}
+
+.search-no-results-title {
+    margin: 0;
+    color: #643b37;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.3rem;
+}
+
+.search-no-results-hint {
+    margin: 0.5rem 0 0;
+    color: #796450;
+    font-size: 0.9rem;
+}

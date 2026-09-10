@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Search;
 use App\Models\Saint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class SearchAutocompleteTest extends TestCase
@@ -60,5 +63,31 @@ class SearchAutocompleteTest extends TestCase
         $this->get('/search?q=unmatched')->assertOk()
             ->assertSee('search-no-results', false)->assertSee('No saints matched.')
             ->assertSee('Try another name, virtue, or patronage');
+    }
+
+    public function test_editing_the_search_query_does_not_run_a_search_during_livewire_render(): void
+    {
+        $component = Livewire::test(Search::class);
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $component->set('query', 'Ther');
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $this->assertEmpty(array_filter($queries, fn ($query) => str_contains($query['query'], 'from "saints"')));
+    }
+
+    public function test_suggestions_do_not_fetch_biographies(): void
+    {
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $this->getJson('/search/suggestions?q=Ther')->assertOk();
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $this->assertNotEmpty($queries);
+        foreach ($queries as $query) {
+            $this->assertStringNotContainsString('biography', $query['query']);
+        }
     }
 }

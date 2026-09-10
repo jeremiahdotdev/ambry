@@ -82,6 +82,11 @@
 }
 
 @media (max-width: 780px) {
+    .saint-kicker-label {
+        text-box-trim: trim-both;
+        text-box-edge: cap alphabetic;
+    }
+
     .saint-subtitle {
         letter-spacing: 0;
     }

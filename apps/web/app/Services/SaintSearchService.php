@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Saint;
+use App\Support\WordPrefixSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,6 +30,7 @@ class SaintSearchService
         ?int $perPage = null,
         ?array $with = null,
         int $limit = 50,
+        ?array $columns = null,
     ): Collection|LengthAwarePaginator|Paginator {
         $normalizedQuery = trim((string) $query);
         $normalizedType = trim((string) $type);
@@ -40,28 +42,29 @@ class SaintSearchService
         $temperament = $this->temperamentForSearchQuery($normalizedQuery);
 
         $search = Saint::query()
-            ->select($this->resultColumns())
+            ->select($columns ?? $this->resultColumns())
             ->with($with ?? ['aliases', 'feastDays', 'patronages', 'religiousOrders'])
             ->when($normalizedType !== '', fn (Builder $builder) => $builder->where('canonical_status', $normalizedType))
             ->when($normalizedPopular !== '', fn (Builder $builder) => $this->applyPopularFilter($builder, $normalizedPopular))
             ->when($normalizedQuery !== '', function (Builder $builder) use ($normalizedQuery, $virtuesSearchColumn, $vicesSearchColumn, $includeBroadText, $temperament, $driver): void {
-                $like = '%'.strtolower($normalizedQuery).'%';
+                $builder->where(function (Builder $query) use ($normalizedQuery, $virtuesSearchColumn, $vicesSearchColumn, $includeBroadText, $temperament, $driver): void {
+                    WordPrefixSearch::where($query, 'primary_name', $normalizedQuery);
 
-                $builder->where(function (Builder $query) use ($like, $virtuesSearchColumn, $vicesSearchColumn, $includeBroadText, $temperament, $driver): void {
+                    if ($includeBroadText) {
+                        WordPrefixSearch::where($query, $virtuesSearchColumn, $normalizedQuery, 'or');
+                        WordPrefixSearch::where($query, $vicesSearchColumn, $normalizedQuery, 'or');
+                    }
+
                     $query
-                        ->whereRaw('lower(primary_name) like ?', [$like])
-                        ->when($includeBroadText, function (Builder $query) use ($like, $virtuesSearchColumn, $vicesSearchColumn): void {
-                            $query
-                                ->orWhereRaw("lower(coalesce({$virtuesSearchColumn}, '')) like ?", [$like])
-                                ->orWhereRaw("lower(coalesce({$vicesSearchColumn}, '')) like ?", [$like]);
-                        })
-                        ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->whereRaw('lower(alias) like ?', [$like]))
-                        ->orWhereHas('patronages', function (Builder $patronages) use ($like, $includeBroadText): void {
-                            $patronages->where(function (Builder $query) use ($like, $includeBroadText): void {
-                                $query
-                                    ->whereRaw('lower(name) like ?', [$like])
-                                    ->orWhereRaw('lower(slug) like ?', [$like])
-                                    ->when($includeBroadText, fn (Builder $query) => $query->orWhereRaw("lower(coalesce(description, '')) like ?", [$like]));
+                        ->orWhereHas('aliases', fn (Builder $aliases) => WordPrefixSearch::where($aliases, 'alias', $normalizedQuery))
+                        ->orWhereHas('patronages', function (Builder $patronages) use ($normalizedQuery, $includeBroadText): void {
+                            $patronages->where(function (Builder $query) use ($normalizedQuery, $includeBroadText): void {
+                                WordPrefixSearch::where($query, 'name', $normalizedQuery);
+                                WordPrefixSearch::where($query, 'slug', $normalizedQuery, 'or');
+
+                                if ($includeBroadText) {
+                                    WordPrefixSearch::where($query, 'description', $normalizedQuery, 'or');
+                                }
                             });
                         })
                         ->when($temperament !== null, fn (Builder $query) => $query->orWhere(
@@ -84,6 +87,14 @@ class SaintSearchService
         }
 
         return $search->limit($limit)->get();
+    }
+
+    public function suggestions(string $query, string $type, ?string $popular = null): Collection
+    {
+        return $this->search(
+            $query, type: $type, popular: $popular, with: [], limit: 6,
+            columns: ['id', 'primary_name', 'slug', 'canonical_status'],
+        );
     }
 
     /**

@@ -22,8 +22,6 @@ class Search extends Component
     #[Url(history: true, except: '')]
     public string $popular = '';
 
-    public array $suggestions = [];
-
     #[Locked]
     public bool $resultsPage = false;
 
@@ -61,19 +59,6 @@ class Search extends Component
         [$query, $selectedType] = $filters->normalizedQueryAndType(mb_substr($this->query, 0, 200), $this->type);
         $selectedPopularSearch = $filters->selectedPopularSearch($this->popular);
         $search = app(SaintSearchService::class);
-        $suggestions = [];
-
-        if (! $this->resultsPage && mb_strlen($query) >= 2) {
-            $suggestions = $search->search($query, type: $selectedType, popular: $selectedPopularSearch, with: [], limit: 6)
-                ->map(fn ($saint) => [
-                    'name' => $saint->displayName(),
-                    'type' => SearchFilters::SEARCH_TYPES[$saint->canonical_status] ?? 'Saint',
-                    'url' => route('saints.profile', $saint),
-                ])->all();
-        }
-
-        $this->suggestions = $suggestions;
-
         $results = $this->resultsPage
             ? $search->search($query, type: $selectedType, popular: $selectedPopularSearch, perPage: 10, with: ['patronages'])
                 ->withPath(route('search.results'))->appends(array_filter(['q' => $this->query, 'type' => $this->type, 'popular' => $this->popular], fn ($value) => $value !== ''))
@@ -88,7 +73,6 @@ class Search extends Component
             'searched' => $this->resultsPage,
             'error' => null,
             'results' => $results,
-            'suggestions' => $suggestions,
         ]);
     }
 }

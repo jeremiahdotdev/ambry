@@ -8,10 +8,15 @@ use App\Http\Controllers\SaintEditorStaffController;
 use App\Http\Controllers\SaintProfileController;
 use App\Http\Controllers\SearchController;
 use App\Support\GeneratedSaintImages;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/', [SearchController::class, 'index'])->name('search.index');
-Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
+Route::get('/search/suggestions', [SearchController::class, 'suggestions'])
+    ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, ValidateCsrfToken::class])
+    ->name('search.suggestions');
 Route::get('/search', [SearchController::class, 'search'])->name('search.results');
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');

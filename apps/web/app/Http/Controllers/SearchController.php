@@ -34,8 +34,8 @@ class SearchController extends Controller
             return response()->json(['suggestions' => []]);
         }
 
-        $results = $this->saintSearch->search(
-            $query, type: $type, popular: $this->filters->selectedPopularSearch((string) $request->query('popular', '')), with: [], limit: 6,
+        $results = $this->saintSearch->suggestions(
+            $query, type: $type, popular: $this->filters->selectedPopularSearch((string) $request->query('popular', '')),
         );
 
         return response()->json(['suggestions' => $results->map(fn ($saint) => [

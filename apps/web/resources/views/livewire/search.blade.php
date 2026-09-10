@@ -41,8 +41,8 @@
         </header>
 
         <section class="search-shell" aria-label="Saint search">
-            <form wire:submit="search" id="saint-search-form" action="{{ route('search.results') }}" method="GET" class="search-panel">
-                <x-search.autocomplete :suggestions="$suggestions" />
+            <form wire:submit="search" id="saint-search-form" action="{{ route('search.results') }}" method="GET" class="search-panel search-panel--autocomplete">
+                <x-search.autocomplete />
                 <button type="submit" aria-label="Search">
                     <i data-lucide="arrow-right" aria-hidden="true"></i>
                 </button>
@@ -53,7 +53,6 @@
                     data-popular-filter-input
                     @if (! $selectedPopularSearch) disabled @endif
                 >
-                <span wire:loading role="status" class="request-status">Searching…</span>
             </form>
 
             @if ($popularSearches)

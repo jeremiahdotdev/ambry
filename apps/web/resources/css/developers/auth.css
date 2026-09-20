@@ -3,6 +3,10 @@
     padding-bottom: 3rem;
 }
 
+.developer-login {
+    width: min(100%, 34rem);
+}
+
 .developer-auth-panel {
     position: relative;
     z-index: 2;

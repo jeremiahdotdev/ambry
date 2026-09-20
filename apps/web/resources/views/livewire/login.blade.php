@@ -1,4 +1,4 @@
-<div>
+<div class="developer-login">
     <x-auth.form wire:submit="login"
         title="Login"
         :action="route('login.store')"

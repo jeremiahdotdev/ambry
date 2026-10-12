@@ -117,6 +117,24 @@ func TestDocsUseAmbryOverviewAndTheme(t *testing.T) {
 	}
 
 	components := document["components"].(map[string]any)
+	paths := document["paths"].(map[string]any)
+	dailyPath, ok := paths["/api/v1/saint-of-the-day"].(map[string]any)
+	if !ok {
+		t.Fatal("expected saint-of-the-day endpoint in OpenAPI")
+	}
+	dailyGet := dailyPath["get"].(map[string]any)
+	if dailyGet["operationId"] != "get-saint-of-the-day" || len(dailyGet["security"].([]any)) == 0 {
+		t.Fatal("expected documented authenticated saint-of-the-day operation")
+	}
+	responses := dailyGet["responses"].(map[string]any)
+	for _, status := range []string{"200", "400", "409", "500"} {
+		if _, ok := responses[status]; !ok {
+			t.Fatalf("missing saint-of-the-day response %s", status)
+		}
+	}
+	if !strings.Contains(description, "## Saint of the Day") {
+		t.Fatal("expected saint-of-the-day behavior in OpenAPI overview")
+	}
 	securitySchemes := components["securitySchemes"].(map[string]any)
 	if _, ok := securitySchemes["BearerAuth"]; !ok {
 		t.Fatal("expected BearerAuth security scheme")

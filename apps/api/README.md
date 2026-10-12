@@ -1,10 +1,10 @@
 # Ambry API
 
-Read-only Go REST API app for the existing Ambry Catholic saints PostgreSQL database. This app lives inside the Ambry monorepo at `apps/api`.
+Go REST API app for the existing Ambry Catholic saints PostgreSQL database. This app lives inside the Ambry monorepo at `apps/api`.
 
 ## Overview
 
-Ambry exposes a read-only REST API for saints, patronages, religious orders, feast days, and Bible verses. The interactive API documentation is available at `/`, and the raw OpenAPI documents are available at `/openapi.json` and `/openapi.yaml`.
+Ambry exposes a REST API for saints, patronages, religious orders, feast days, and Bible verses. Resource endpoints read existing data; saint-of-the-day requests persist a shared daily selection when one does not yet exist. The interactive API documentation is available at `/`, and the raw OpenAPI documents are available at `/openapi.json` and `/openapi.yaml`.
 
 All `/api/v1/*` endpoints require a developer API key. Public endpoints are limited to `/health`, `/`, `/openapi.json`, `/openapi.yaml`, and `/schemas/*`.
 
@@ -57,11 +57,12 @@ API access is rate limited per user account with Upstash Redis: 60 requests per 
 
 ## Discovered Schema
 
-The API was mapped from the existing Laravel migrations in `apps/web` and does not modify the database topology.
+The core API schema was mapped from existing Laravel migrations in `apps/web`. The Go app owns the additional `saint_of_the_day` table, defined in `db/migrations/001_saint_of_the_day.sql`. Apply this migration explicitly; the API does not run migrations at startup or during requests.
 
 Core tables used:
 
 - `saints`
+- `saint_of_the_day` (Go-owned daily selection history)
 - `saint_aliases`
 - `feast_days`
 - `patronages`
@@ -86,6 +87,7 @@ Unresolved mappings:
 - `GET /health`
 - `GET /api/v1/saints`
 - `GET /api/v1/saints/{slug}`
+- `GET /api/v1/saint-of-the-day`
 - `GET /api/v1/patronages`
 - `GET /api/v1/religious-orders`
 - `GET /api/v1/feast-days`
@@ -98,6 +100,24 @@ Documentation:
 - `GET /openapi.yaml`
 
 All `/api/v1/*` routes require a developer API key created by the Laravel web app.
+
+### Saint of the Day
+
+`GET /api/v1/saint-of-the-day?date=2026-10-11` returns `{ "date": "2026-10-11", "saint": { ... } }`, where `saint` is the full profile returned by the saint-by-slug endpoint. Omit `date` to use today in UTC. Dates must be valid `YYYY-MM-DD` values with years between `0001` and `9999`; invalid dates return `400`.
+
+The first request for a date saves a selection in PostgreSQL. All API keys and users share the same selection, and repeated requests return the same saint, with its current profile data. Past and future dates are supported and reserve that saint for the requested year immediately. Selections are created only for requested dates; there is no background schedule or automatic backfill.
+
+Only records with `canonical_status = 'saint'` are eligible. Selection randomly chooses an unused saint whose feast month and day match the requested date (across any calendar), or falls back to any unused eligible saint. An already-used saint is excluded even if another of its feast days matches. A saint can appear again in a different calendar year. If no unused eligible saints remain, the endpoint returns `409 Conflict` and does not create a selection. Existing selections remain available after exhaustion. Filling every day requires at least 365 eligible saints, or 366 in a leap year.
+
+The `saint_of_the_day` table stores `selection_date`, a generated `selection_year`, `saint_id`, and `created_at`. Its date primary key and unique `(selection_year, saint_id)` constraint enforce daily stability and annual uniqueness. Transactions take a per-year PostgreSQL advisory lock so concurrent requests across API instances cannot choose the same saint for different dates. The foreign key restricts deletion of saints with saved selections to preserve history.
+
+Before deploying the endpoint against an existing database, run this once from `apps/api` using an account with schema permissions:
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/001_saint_of_the_day.sql
+```
+
+The API database role needs `SELECT` and `INSERT` on `saint_of_the_day` in addition to its existing permissions. Fresh Docker Compose databases include the table through the schema snapshot; existing Docker volumes need the migration too. Do not apply both the snapshot and the migration to the same database. No Laravel code or migrations are needed for this addition.
 
 ## Configuration
 
@@ -136,6 +156,8 @@ Example requests:
 curl 'http://localhost:8080/health'
 curl -H 'Authorization: Bearer saints_test_...' 'http://localhost:8080/api/v1/saints?q=patrick'
 curl -H 'Authorization: Bearer saints_test_...' 'http://localhost:8080/api/v1/saints/st-patrick'
+curl -H 'Authorization: Bearer saints_test_...' 'http://localhost:8080/api/v1/saint-of-the-day'
+curl -H 'Authorization: Bearer saints_test_...' 'http://localhost:8080/api/v1/saint-of-the-day?date=2026-10-11'
 curl -H 'X-API-Key: saints_test_...' 'http://localhost:8080/api/v1/patronages?q=ireland'
 curl -H 'X-API-Key: saints_test_...' 'http://localhost:8080/api/v1/religious-orders'
 curl -H 'X-API-Key: saints_test_...' 'http://localhost:8080/api/v1/feast-days?month=3&day=17'
@@ -272,7 +294,7 @@ Deployment steps:
 10. Open `https://your-domain/`.
 11. Open `https://your-domain/openapi.json`.
 
-The API does not run migrations during Vercel request execution. Run database migrations separately through the owning Laravel app, a CI job, or an administrative migration command pointed at the intended database.
+The API does not run migrations during Vercel request execution. Run core database migrations separately through the owning Laravel app. Apply the Go-owned saint-of-the-day SQL migration separately before deploying this endpoint, as described above.
 
 The shared handler is platform-neutral. To move later to Railway, Render, Fly.io, a VPS, Docker, or another conventional host, use `cmd/api/main.go` or a container image without rewriting route registration.
 
@@ -295,7 +317,11 @@ go test ./...
 go build -o bin/ambry-api ./cmd/api
 ```
 
-Integration tests should be run against the Docker Compose PostgreSQL database, never the production database.
+Integration tests use isolated temporary schemas in a local PostgreSQL database, never the production database. They verify feast-day preference, persisted selections, year rollover, exhaustion, database constraints, and concurrent same-date/different-date requests. Without `TEST_DATABASE_URL`, these tests skip.
+
+```bash
+TEST_DATABASE_URL='postgres://ambry:ambry@127.0.0.1:5433/ambry?sslmode=disable' make test-integration
+```
 
 Vercel build verification, when the Vercel CLI is available:
 

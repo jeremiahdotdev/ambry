@@ -4,13 +4,17 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 )
 
 var ErrNotFound = errors.New("saint not found")
+var ErrInvalidDate = errors.New("date must be a valid YYYY-MM-DD date with year between 0001 and 9999")
+var ErrNoAvailableSaint = errors.New("no unused saints remain for this year")
 
 type Repository interface {
 	Search(context.Context, SearchFilters) (SearchPage, error)
 	GetBySlug(context.Context, string) (Detail, error)
+	GetOfTheDay(context.Context, time.Time) (OfTheDay, error)
 }
 
 type Service struct {
@@ -19,6 +23,17 @@ type Service struct {
 
 func NewService(repo Repository) Service {
 	return Service{repo: repo}
+}
+
+func (s Service) GetOfTheDay(ctx context.Context, date string) (OfTheDay, error) {
+	if date == "" {
+		date = time.Now().UTC().Format(time.DateOnly)
+	}
+	day, err := time.Parse(time.DateOnly, date)
+	if err != nil || day.Year() < 1 || day.Year() > 9999 {
+		return OfTheDay{}, ErrInvalidDate
+	}
+	return s.repo.GetOfTheDay(ctx, day)
 }
 
 func (s Service) Search(ctx context.Context, filters SearchFilters) (SearchPage, error) {

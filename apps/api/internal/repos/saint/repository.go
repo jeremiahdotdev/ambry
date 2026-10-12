@@ -34,6 +34,12 @@ var listReligiousOrdersSQL string
 //go:embed sql/list_feast_days.sql
 var listFeastDaysSQL string
 
+//go:embed sql/get_of_the_day.sql
+var getOfTheDaySQL string
+
+//go:embed sql/select_of_the_day.sql
+var selectOfTheDaySQL string
+
 type PostgresRepository struct {
 	pool         *pgxpool.Pool
 	queryTimeout time.Duration
@@ -90,10 +96,60 @@ func (r PostgresRepository) GetBySlug(ctx context.Context, slug string) (Detail,
 	}
 	defer tx.Rollback(ctx)
 
+	detail, err := getBySlug(ctx, tx, slug)
+	if err != nil {
+		return Detail{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return Detail{}, err
+	}
+	return detail, nil
+}
+
+func (r PostgresRepository) GetOfTheDay(ctx context.Context, day time.Time) (OfTheDay, error) {
+	ctx, cancel := r.withQueryTimeout(ctx)
+	defer cancel()
+
+	// READ COMMITTED gives the lookup a fresh snapshot after a competing
+	// transaction releases the year lock, even if the database default differs.
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	if err != nil {
+		return OfTheDay{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	// A distinct namespace and year serialize selections across API instances.
+	// Lock acquisition and lookup must be separate statements for fresh snapshots.
+	if _, err := tx.Exec(ctx, "select pg_advisory_xact_lock($1, $2)", int32(0x414d4252), int32(day.Year())); err != nil {
+		return OfTheDay{}, err
+	}
+	date := day.Format(time.DateOnly)
+	var slug string
+	err = tx.QueryRow(ctx, getOfTheDaySQL, day).Scan(&slug)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = tx.QueryRow(ctx, selectOfTheDaySQL, day).Scan(&slug)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return OfTheDay{}, ErrNoAvailableSaint
+		}
+	}
+	if err != nil {
+		return OfTheDay{}, err
+	}
+	detail, err := getBySlug(ctx, tx, slug)
+	if err != nil {
+		return OfTheDay{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return OfTheDay{}, err
+	}
+	return OfTheDay{Date: date, Saint: detail}, nil
+}
+
+func getBySlug(ctx context.Context, tx pgx.Tx, slug string) (Detail, error) {
 	var detail Detail
 	var locationsJSON []byte
 	var titlesJSON []byte
-	err = tx.QueryRow(ctx, getBySlugSQL, slug).Scan(&detail.ID, &detail.PrimaryName, &detail.Slug, &detail.CanonicalStatus, &detail.Biography, &detail.BirthYear, &detail.DeathYear, &locationsJSON, &titlesJSON)
+	err := tx.QueryRow(ctx, getBySlugSQL, slug).Scan(&detail.ID, &detail.PrimaryName, &detail.Slug, &detail.CanonicalStatus, &detail.Biography, &detail.BirthYear, &detail.DeathYear, &locationsJSON, &titlesJSON)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Detail{}, ErrNotFound
 	}
@@ -120,9 +176,6 @@ func (r PostgresRepository) GetBySlug(ctx context.Context, slug string) (Detail,
 	detail.Locations = parseLocations(locationsJSON)
 	detail.Titles = parseTitles(titlesJSON)
 
-	if err := tx.Commit(ctx); err != nil {
-		return Detail{}, err
-	}
 	return detail, nil
 }
 

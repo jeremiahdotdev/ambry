@@ -2,6 +2,7 @@ package routes_test
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -58,6 +59,10 @@ func (saintRepoFake) Search(context.Context, saint.SearchFilters) (saint.SearchP
 
 func (saintRepoFake) GetBySlug(context.Context, string) (saint.Detail, error) {
 	return saint.Detail{}, saint.ErrNotFound
+}
+
+func (saintRepoFake) GetOfTheDay(context.Context, time.Time) (saint.OfTheDay, error) {
+	return saint.OfTheDay{}, saint.ErrNoAvailableSaint
 }
 
 type emptyPatronageRepo struct{}
@@ -249,5 +254,46 @@ func TestAPIKeyRateLimit(t *testing.T) {
 	}
 	if got := rec.Header().Get("Retry-After"); got != "60" {
 		t.Fatalf("expected Retry-After 60, got %q", got)
+	}
+}
+
+type saintOfTheDayRepoFake struct {
+	saintRepoFake
+}
+
+func (saintOfTheDayRepoFake) GetOfTheDay(_ context.Context, day time.Time) (saint.OfTheDay, error) {
+	return saint.OfTheDay{Date: day.Format(time.DateOnly), Saint: saint.Detail{Slug: "st-test"}}, nil
+}
+
+func TestSaintOfTheDayAuthenticationAndRouting(t *testing.T) {
+	srv := server.NewServer(server.ServerOptions{
+		Config:        config.Config{AllowedOrigins: []string{"*"}, RequestTimeout: 5 * time.Second},
+		Logger:        slog.Default(),
+		Saints:        saint.NewService(saintOfTheDayRepoFake{}),
+		Authenticator: acceptingAuthenticator{},
+	})
+	for _, authenticated := range []bool{false, true} {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/saint-of-the-day?date=2026-10-11", nil)
+		if authenticated {
+			req.Header.Set("Authorization", "Bearer saints_test_valid")
+		}
+		rec := httptest.NewRecorder()
+		srv.Handler.ServeHTTP(rec, req)
+		if !authenticated {
+			if rec.Code != http.StatusUnauthorized {
+				t.Fatalf("expected 401 without API key, got %d", rec.Code)
+			}
+			continue
+		}
+		var selection saint.OfTheDay
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &selection); err != nil {
+			t.Fatal(err)
+		}
+		if selection.Date != "2026-10-11" || selection.Saint.Slug != "st-test" {
+			t.Fatalf("unexpected selection: %+v", selection)
+		}
 	}
 }

@@ -32,7 +32,32 @@ type getSaintOutput struct {
 	Body Detail
 }
 
+type getSaintOfTheDayInput struct {
+	Date string `query:"date" doc:"Optional YYYY-MM-DD date (years 0001–9999). Defaults to today in UTC." example:"2026-10-11"`
+}
+
+type getSaintOfTheDayOutput struct {
+	Body OfTheDay
+}
+
 func RegisterRoutes(api huma.API, service Service) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-saint-of-the-day",
+		Method:      http.MethodGet,
+		Path:        "/api/v1/saint-of-the-day",
+		Summary:     "Get saint of the day",
+		Description: "Returns the saved saint selection for a date, shared by all API consumers. The first request persists a selection, preferring an unused canonically designated saint with a matching feast day and falling back to any unused saint. A saint cannot be selected on two dates in the same calendar year. Returns 409 if no unused saints remain.",
+		Tags:        []string{"Saints"},
+		Security:    []map[string][]string{{"BearerAuth": {}}},
+		Errors:      []int{http.StatusBadRequest, http.StatusConflict, http.StatusInternalServerError},
+	}, func(ctx context.Context, input *getSaintOfTheDayInput) (*getSaintOfTheDayOutput, error) {
+		selection, err := service.GetOfTheDay(ctx, input.Date)
+		if err != nil {
+			return nil, handlerError(err)
+		}
+		return &getSaintOfTheDayOutput{Body: selection}, nil
+	})
+
 	huma.Register(api, huma.Operation{
 		OperationID: "list-saints",
 		Method:      http.MethodGet,
@@ -80,6 +105,12 @@ func RegisterRoutes(api huma.API, service Service) {
 }
 
 func handlerError(err error) error {
+	if errors.Is(err, ErrInvalidDate) {
+		return huma.Error400BadRequest(ErrInvalidDate.Error())
+	}
+	if errors.Is(err, ErrNoAvailableSaint) {
+		return huma.Error409Conflict("No unused saints remain for the requested year.")
+	}
 	if errors.Is(err, ErrNotFound) {
 		return huma.Error404NotFound("The requested saint was not found.")
 	}

@@ -1,13 +1,13 @@
 # Ambry
 
-Ambry is a monorepo for the Catholic saints discovery product. It contains the Laravel web app that owns the user experience and database migrations, plus a distinct Go REST API app for read-only developer access to the same saints database.
+Ambry is a monorepo for the Catholic saints discovery product. It contains the Laravel web app that owns the user experience and database migrations, plus a distinct Go REST API app for developer access to the same saints database and persisted saint-of-the-day selections.
 
 ## Apps
 
 - `apps/web`: Laravel web app, developer dashboard, API key management, saint search, profile pages, imports, and database migrations.
-- `apps/api`: Go REST API with Huma/OpenAPI docs, Vercel serverless entry point, local server entry point, and read-only PostgreSQL repositories.
+- `apps/api`: Go REST API with Huma/OpenAPI docs, Vercel serverless entry point, local server entry point, and PostgreSQL repositories.
 
-The Laravel app owns database topology. The Go API consumes the existing schema and may keep SQL/schema snapshots for local development, but it should not introduce or run production migrations.
+The Laravel app owns the core database topology. The Go API consumes that schema and owns the additional `saint_of_the_day` selection history table. Its SQL migration is applied explicitly, never automatically by the API; see [Go API setup and saint-of-the-day behavior](apps/api/README.md#saint-of-the-day).
 
 ## Requirements
 
@@ -72,10 +72,11 @@ go run ./cmd/api
 Useful endpoints:
 
 - `GET /health`
-- `GET /docs`
+- `GET /`
 - `GET /openapi.json`
 - `GET /api/v1/saints`
 - `GET /api/v1/saints/{slug}`
+- `GET /api/v1/saint-of-the-day` (optional `date=YYYY-MM-DD`, defaults to today in UTC; no repeated saints within a year)
 - `GET /api/v1/patronages`
 - `GET /api/v1/religious-orders`
 - `GET /api/v1/feast-days`
@@ -124,4 +125,4 @@ The frontend bundle does not import Composer dependencies. Laravel serves Livewi
 
 The Go API has its own `apps/api/vercel.json`. Deploy it as a separate Vercel project with the project root set to `apps/api`, or use its Dockerfile on a conventional host.
 
-Both apps should point at the same production database, but only the Laravel app should run migrations.
+Both apps should point at the same production database. The Laravel app runs core migrations; the Go-owned saint-of-the-day SQL migration must also be applied explicitly before deploying that endpoint.

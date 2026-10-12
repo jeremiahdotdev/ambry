@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"time"
 
 	"api/internal/database"
 	"api/internal/repos/bibleverse"
@@ -34,6 +35,10 @@ func (saintRepoFake) Search(context.Context, saint.SearchFilters) (saint.SearchP
 
 func (saintRepoFake) GetBySlug(context.Context, string) (saint.Detail, error) {
 	return saint.Detail{}, saint.ErrNotFound
+}
+
+func (saintRepoFake) GetOfTheDay(context.Context, time.Time) (saint.OfTheDay, error) {
+	return saint.OfTheDay{}, saint.ErrNoAvailableSaint
 }
 
 type emptyPatronageRepo struct{}

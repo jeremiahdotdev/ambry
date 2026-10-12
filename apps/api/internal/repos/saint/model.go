@@ -2,6 +2,11 @@ package saint
 
 import "api/internal/database"
 
+type OfTheDay struct {
+	Date  string `json:"date" format:"date" doc:"Selected calendar date in YYYY-MM-DD format." example:"2026-10-11"`
+	Saint Detail `json:"saint" doc:"Saint selected for this date, shared by all API consumers."`
+}
+
 type FeastDay struct {
 	Month int    `json:"month" doc:"Feast month, 1 through 12." example:"3"`
 	Day   int    `json:"day" doc:"Feast day of month." example:"17"`

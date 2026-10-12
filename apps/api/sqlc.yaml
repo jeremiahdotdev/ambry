@@ -4,6 +4,8 @@ sql:
     schema: "db/schema/schema.sql"
     queries:
       - "internal/repos/saint/sql/queries.sql"
+      - "internal/repos/saint/sql/get_of_the_day.sql"
+      - "internal/repos/saint/sql/select_of_the_day.sql"
       - "internal/repos/patronage/sql/queries.sql"
       - "internal/repos/religiousorder/sql/queries.sql"
       - "internal/repos/feastday/queries.sql"

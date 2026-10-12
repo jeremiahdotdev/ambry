@@ -1,4 +1,5 @@
--- Schema snapshot derived from the Laravel migrations at the monorepo root.
+-- Schema snapshot derived from Laravel migrations and the Go-owned
+-- db/migrations/001_saint_of_the_day.sql addition.
 -- This file is for sqlc/local development only. It is not applied by the API.
 
 create table saints (
@@ -50,6 +51,17 @@ create table saints (
     image_variant_confidence numeric(4,3),
     created_at timestamp,
     updated_at timestamp
+);
+
+create table saint_of_the_day (
+    selection_date date primary key,
+    selection_year integer generated always as (extract(year from selection_date)::integer) stored,
+    saint_id uuid not null references saints(id) on delete restrict,
+    created_at timestamptz not null default now(),
+    constraint saint_of_the_day_date_range check (
+        selection_date >= date '0001-01-01' and selection_date < date '10000-01-01'
+    ),
+    constraint saint_of_the_day_year_saint_unique unique (selection_year, saint_id)
 );
 
 create table saint_aliases (

@@ -41,8 +41,8 @@ func Load() (Config, error) {
 		DatabaseConnectTimeout:  envDuration("DATABASE_CONNECT_TIMEOUT", 5*time.Second),
 		QueryTimeout:            envDuration("QUERY_TIMEOUT", 5*time.Second),
 		RequestTimeout:          envDuration("REQUEST_TIMEOUT", 10*time.Second),
-		UpstashRedisRESTURL:     firstEnv("UPSTASH_REDIS_REST_URL", "KV_REST_API_URL"),
-		UpstashRedisRESTToken:   firstEnv("UPSTASH_REDIS_REST_TOKEN", "KV_REST_API_TOKEN"),
+		UpstashRedisRESTURL:     firstEnv("UPSTASH_REDIS_REST_URL", "KV_REST_API_URL", "REDIS_KV_REST_API_URL"),
+		UpstashRedisRESTToken:   firstEnv("UPSTASH_REDIS_REST_TOKEN", "KV_REST_API_TOKEN", "REDIS_KV_REST_API_TOKEN"),
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, errors.New("DATABASE_URL is required")

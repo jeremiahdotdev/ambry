@@ -33,7 +33,7 @@ curl -H 'X-API-Key: saints_test_...' \
   'http://localhost:8080/api/v1/bible-verses?book_code=gen&chapter=1'
 ```
 
-API access is rate limited per user account with Upstash Redis: 60 requests per minute and 5,000 requests per day across all keys on the account. Requests over the limit return `429 Too Many Requests` with `Retry-After: 60`. Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; Vercel KV-style `KV_REST_API_URL` and `KV_REST_API_TOKEN` are also supported.
+API access is rate limited per user account with Upstash Redis: 60 requests per minute and 5,000 requests per day across all keys on the account. Requests over the limit return `429 Too Many Requests` with `Retry-After: 60`. Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`; Vercel KV-style `KV_REST_API_URL` and `KV_REST_API_TOKEN`, including the `REDIS_KV_REST_API_URL` and `REDIS_KV_REST_API_TOKEN` names in `.env.example`, are also supported. If multiple names are configured, the API prefers `UPSTASH_*`, then `KV_*`, then `REDIS_KV_*`. Use the read/write REST token, since enforcing quotas updates Redis counters. Missing Redis credentials cause authenticated requests to return `503 api_key_verification_unavailable`.
 
 ## Stack
 

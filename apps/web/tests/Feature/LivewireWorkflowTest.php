@@ -90,13 +90,39 @@ class LivewireWorkflowTest extends TestCase
             ->call('create')->assertHasErrors(['name' => 'required'])
             ->set('name', 'Livewire key')->call('create')->assertHasNoErrors()->assertSee('Livewire key');
         $key = $user->developerApiKeys()->firstOrFail();
-        $component->assertDontSee($key->token_hash)->assertDontSee($key->prefix)
+        $component->assertDontSee($key->token_hash)->assertSee($key->prefix)
             ->call('revoke', $key->id)->assertSee('Revoked');
         $this->assertNotNull($key->fresh()->revoked_at);
         $other = User::factory()->create();
         $foreign = $other->developerApiKeys()->create(['name' => 'Foreign', 'prefix' => 'foreign', 'token_hash' => hash('sha256', 'foreign')]);
         $component->call('revoke', $foreign->id)->assertNotFound();
         $this->assertNull($foreign->fresh()->revoked_at);
+    }
+
+    public function test_new_api_key_is_shown_once_without_persisting_in_livewire_state(): void
+    {
+        $user = User::factory()->create();
+        $component = Livewire::actingAs($user)->test(ApiKeys::class)
+            ->set('name', 'Copyable key')->call('create')->assertHasNoErrors();
+        $token = $component->viewData('newToken');
+        $key = $user->developerApiKeys()->firstOrFail();
+
+        $this->assertStringStartsWith('saints_test_', $token);
+        $this->assertSame(hash('sha256', $token), $key->token_hash);
+        $component->assertSee($token)->assertSee('Copy key')->assertDontSee($key->token_hash);
+        $this->assertArrayNotHasKey('newToken', $component->snapshot['data']);
+        $this->assertStringNotContainsString($token, json_encode($component->snapshot));
+        $this->assertNull(session('new_api_token'));
+
+        // A later Livewire request cannot hydrate the secret from the snapshot.
+        $component->set('name', 'Another key')->assertDontSee($token)->assertDontSee('API key created');
+        Livewire::test(ApiKeys::class)->assertDontSee($token)->assertDontSee($key->prefix);
+
+        $component->call('create')->assertHasNoErrors();
+        $nextToken = $component->viewData('newToken');
+        $this->assertNotSame($token, $nextToken);
+        $component->assertSee($nextToken)->assertDontSee($token);
+        $this->assertSame(2, $user->developerApiKeys()->count());
     }
 
     public function test_login_and_logout_use_livewire(): void

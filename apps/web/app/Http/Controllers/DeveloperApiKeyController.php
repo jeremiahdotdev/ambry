@@ -17,7 +17,6 @@ class DeveloperApiKeyController extends Controller
                 ->developerApiKeys()
                 ->latest()
                 ->get(),
-            'newToken' => session('new_api_token'),
             'apiDocumentationUrl' => config('services.saints_api.url'),
         ]);
     }

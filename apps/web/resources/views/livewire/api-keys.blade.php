@@ -19,7 +19,7 @@
                 @endif
 
                 <form wire:submit="logout">
-                    <button type="submit" class="developer-logout-link">Logout</button>
+                    <x-form.button>Logout</x-form.button>
                 </form>
             </div>
         </section>
@@ -31,9 +31,26 @@
         @endif
 
         @if ($newToken)
-            <section class="developer-token" aria-label="New API token">
+            <section class="developer-token" aria-label="New API token"
+                wire:key="new-api-token-{{ Str::uuid() }}"
+                x-data="{ copied: false, copyFailed: false }">
                 <h2>API key created</h2>
-                <p>The key value is hidden and cannot be viewed again.</p>
+                <p>Copy this key now. You won't be able to view it again.</p>
+                <code x-ref="token">{{ $newToken }}</code>
+                <div class="developer-token-actions">
+                    <x-form.button type="button"
+                        x-on:click="
+                            try {
+                                await navigator.clipboard.writeText($refs.token.textContent.trim());
+                                copied = true;
+                                copyFailed = false;
+                            } catch {
+                                copyFailed = true;
+                            }
+                        "
+                        x-text="copied ? 'Copied' : 'Copy key'">Copy key</x-form.button>
+                    <span x-show="copyFailed" x-cloak role="status">Select and copy the key above.</span>
+                </div>
             </section>
         @endif
 

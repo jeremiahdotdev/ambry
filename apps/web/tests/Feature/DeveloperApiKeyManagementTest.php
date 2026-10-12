@@ -110,8 +110,11 @@ class DeveloperApiKeyManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Local dashboard')
             ->assertSee('API key created')
-            ->assertDontSee($plainTextToken)
-            ->assertDontSee($apiKey->prefix);
+            ->assertSee($plainTextToken)
+            ->assertSee('Copy key')
+            ->assertDontSee($apiKey->token_hash);
+
+        $this->assertNull(session('new_api_token'));
 
         $this
             ->actingAs($user)

@@ -14,11 +14,13 @@ class ApiKeys extends Component
 
     public string $status = '';
 
-    public bool $newToken = false;
+    // Only render the raw token in the response that creates or receives it.
+    // Protected properties are not included in Livewire's client snapshot.
+    protected ?string $newToken = null;
 
     public function mount(): void
     {
-        $this->newToken = session()->has('new_api_token');
+        $this->newToken = session()->pull('new_api_token');
     }
 
     public function create(): void
@@ -28,9 +30,7 @@ class ApiKeys extends Component
             'name' => 'required|string|max:80',
             'expires_at' => 'nullable|date|after:today',
         ]);
-        app(DeveloperApiKeyService::class)->create(auth()->user(), $validated);
-        // Preserve the existing UI: raw tokens are never rendered or serialized.
-        $this->newToken = true;
+        $this->newToken = app(DeveloperApiKeyService::class)->create(auth()->user(), $validated);
         $this->reset('name', 'expires_at', 'status');
     }
 
@@ -42,7 +42,7 @@ class ApiKeys extends Component
         if ($key->revoked_at === null) {
             $key->forceFill(['revoked_at' => now()])->save();
         }
-        $this->newToken = false;
+        $this->newToken = null;
         $this->status = 'API key revoked.';
     }
 
@@ -59,6 +59,7 @@ class ApiKeys extends Component
         abort_unless(auth()->check(), 403);
 
         return view('livewire.api-keys', [
+            'newToken' => $this->newToken,
             'apiKeys' => auth()->user()->developerApiKeys()->latest()->get(),
             'apiDocumentationUrl' => config('services.saints_api.url'),
         ]);

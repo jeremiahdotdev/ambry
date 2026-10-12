@@ -46,17 +46,6 @@
     text-decoration: none;
 }
 
-.developer-logout-link {
-    color: #42183d;
-    font-weight: 800;
-    text-decoration: none;
-}
-
-.developer-logout-link:hover,
-.developer-logout-link:focus-visible {
-    text-decoration: underline;
-}
-
 .developer-alert,
 .developer-token,
 .developer-panel {
@@ -99,6 +88,14 @@
     overflow-wrap: anywhere;
     color: #401b3f;
     font-size: 0.92rem;
+}
+
+.developer-token-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-block-start: 0.8rem;
 }
 
 .developer-form {
@@ -208,6 +205,7 @@
     }
 
     .developer-docs-link,
+    .developer-actions .form-button,
     .developer-form .form-button,
     .developer-key .form-button {
         width: 100%;

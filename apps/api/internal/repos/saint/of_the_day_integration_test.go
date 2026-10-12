@@ -105,14 +105,21 @@ func TestOfTheDayPersistencePreferenceAndYearReset(t *testing.T) {
 	if _, err := pool.Exec(ctx, "insert into feast_days (saint_id, month, day) values ('00000000-0000-0000-0000-000000000001', 10, 11), ('00000000-0000-0000-0000-000000000001', 10, 12)"); err != nil {
 		t.Fatal(err)
 	}
+	imageURL := "https://images.example.com/st-test-1/portrait.webp"
+	if _, err := pool.Exec(ctx, "update saints set image_portrait_url = $1 where slug = 'st-test-1'", imageURL); err != nil {
+		t.Fatal(err)
+	}
 	first := getDay(t, repo, "2026-10-11")
-	if first.Saint.Slug != "st-test-1" || len(first.Saint.FeastDays) != 2 {
+	if first.Saint.Slug != "st-test-1" || len(first.Saint.FeastDays) != 2 || first.Saint.ImagePortraitURL == nil || *first.Saint.ImagePortraitURL != imageURL {
 		t.Fatalf("expected feast-day saint with full profile: %+v", first)
 	}
 	if repeat := getDay(t, repo, first.Date); repeat.Saint.ID != first.Saint.ID {
 		t.Fatalf("repeat changed saved selection: %+v", repeat)
 	}
 	second := getDay(t, repo, "2026-10-12")
+	if second.Saint.ImagePortraitURL != nil {
+		t.Fatal("expected missing portrait to remain nil")
+	}
 	if second.Saint.ID == first.Saint.ID {
 		t.Fatal("reused feast-day saint instead of unused fallback")
 	}

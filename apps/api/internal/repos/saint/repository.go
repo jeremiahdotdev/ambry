@@ -149,7 +149,7 @@ func getBySlug(ctx context.Context, tx pgx.Tx, slug string) (Detail, error) {
 	var detail Detail
 	var locationsJSON []byte
 	var titlesJSON []byte
-	err := tx.QueryRow(ctx, getBySlugSQL, slug).Scan(&detail.ID, &detail.PrimaryName, &detail.Slug, &detail.CanonicalStatus, &detail.Biography, &detail.BirthYear, &detail.DeathYear, &locationsJSON, &titlesJSON)
+	err := tx.QueryRow(ctx, getBySlugSQL, slug).Scan(&detail.ID, &detail.PrimaryName, &detail.Slug, &detail.CanonicalStatus, &detail.Biography, &detail.BirthYear, &detail.DeathYear, &detail.ImagePortraitURL, &locationsJSON, &titlesJSON)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Detail{}, ErrNotFound
 	}

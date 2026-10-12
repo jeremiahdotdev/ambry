@@ -103,7 +103,7 @@ All `/api/v1/*` routes require a developer API key created by the Laravel web ap
 
 ### Saint of the Day
 
-`GET /api/v1/saint-of-the-day?date=2026-10-11` returns `{ "date": "2026-10-11", "saint": { ... } }`, where `saint` is the full profile returned by the saint-by-slug endpoint. Omit `date` to use today in UTC. Dates must be valid `YYYY-MM-DD` values with years between `0001` and `9999`; invalid dates return `400`.
+`GET /api/v1/saint-of-the-day?date=2026-10-11` returns `{ "date": "2026-10-11", "saint": { ... } }`, where `saint` is the full profile returned by the saint-by-slug endpoint, including the optional `image_portrait_url` from Ambry's stored portrait image. The image field is omitted when the saint has no stored portrait URL. Both endpoints return the same portrait field; no new migration is required. Omit `date` to use today in UTC. Dates must be valid `YYYY-MM-DD` values with years between `0001` and `9999`; invalid dates return `400`.
 
 The first request for a date saves a selection in PostgreSQL. All API keys and users share the same selection, and repeated requests return the same saint, with its current profile data. Past and future dates are supported and reserve that saint for the requested year immediately. Selections are created only for requested dates; there is no background schedule or automatic backfill.
 

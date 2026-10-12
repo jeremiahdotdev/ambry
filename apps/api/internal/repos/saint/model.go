@@ -27,19 +27,20 @@ type SearchResult struct {
 }
 
 type Detail struct {
-	ID              string     `json:"id" doc:"Saint UUID."`
-	PrimaryName     string     `json:"primary_name" doc:"Primary display name."`
-	Slug            string     `json:"slug" doc:"Stable URL slug."`
-	CanonicalStatus string     `json:"canonical_status" doc:"Canonical status."`
-	Biography       *string    `json:"biography,omitempty" doc:"Full biography text."`
-	BirthYear       *int       `json:"birth_year,omitempty" doc:"Birth year when known."`
-	DeathYear       *int       `json:"death_year,omitempty" doc:"Death year when known."`
-	Aliases         []string   `json:"aliases" doc:"Known aliases."`
-	FeastDays       []FeastDay `json:"feast_days" doc:"Associated feast days."`
-	Patronages      []string   `json:"patronages" doc:"Associated patronages."`
-	ReligiousOrders []string   `json:"religious_orders" doc:"Associated religious orders."`
-	Locations       []Location `json:"locations" doc:"Profile landmark/location data when supplied in profile_landmarks JSON."`
-	Titles          []string   `json:"titles" doc:"Role/title-like values from profile_church_roles or roles JSON."`
+	ImagePortraitURL *string    `json:"image_portrait_url,omitempty" doc:"Public portrait image URL when available."`
+	ID               string     `json:"id" doc:"Saint UUID."`
+	PrimaryName      string     `json:"primary_name" doc:"Primary display name."`
+	Slug             string     `json:"slug" doc:"Stable URL slug."`
+	CanonicalStatus  string     `json:"canonical_status" doc:"Canonical status."`
+	Biography        *string    `json:"biography,omitempty" doc:"Full biography text."`
+	BirthYear        *int       `json:"birth_year,omitempty" doc:"Birth year when known."`
+	DeathYear        *int       `json:"death_year,omitempty" doc:"Death year when known."`
+	Aliases          []string   `json:"aliases" doc:"Known aliases."`
+	FeastDays        []FeastDay `json:"feast_days" doc:"Associated feast days."`
+	Patronages       []string   `json:"patronages" doc:"Associated patronages."`
+	ReligiousOrders  []string   `json:"religious_orders" doc:"Associated religious orders."`
+	Locations        []Location `json:"locations" doc:"Profile landmark/location data when supplied in profile_landmarks JSON."`
+	Titles           []string   `json:"titles" doc:"Role/title-like values from profile_church_roles or roles JSON."`
 }
 
 type Location struct {

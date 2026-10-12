@@ -38,7 +38,7 @@ Public routes are limited to /health, /, /openapi.json, /openapi.yaml, and /sche
 
 ## Saint of the Day
 
-GET /api/v1/saint-of-the-day returns a saved daily selection as a date and a full saint profile. Pass date=YYYY-MM-DD for a specific date, or omit it for today in UTC. Invalid dates return 400.
+GET /api/v1/saint-of-the-day returns a saved daily selection as a date and a full saint profile, including image_portrait_url when a stored portrait image is available. The saint-by-slug endpoint exposes the same optional image field. Pass date=YYYY-MM-DD for a specific date, or omit it for today in UTC. Invalid dates return 400.
 
 The first request persists a selection shared by all users and API keys. Later requests for that date return the same saint with its current profile. Only records with canonical_status = 'saint' are eligible. Selection prefers an unused saint with a matching feast day across any calendar, then randomly falls back to another unused saint. No saint repeats within the same calendar year, even when requests run concurrently. Saints become eligible again in a new year.
 

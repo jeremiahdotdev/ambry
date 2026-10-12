@@ -7,6 +7,7 @@ select
     biography,
     birth_year,
     death_year,
+    image_portrait_url,
     profile_landmarks,
     profile_church_roles,
     roles

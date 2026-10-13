@@ -5,7 +5,7 @@
             $relativePath = "saints/{$saint->slug}.png";
             $hasImage = file_exists(public_path($relativePath));
             $fallbackPath = 'saints/default.png';
-            $imageUrl = $generatedImageUrl ?? asset($hasImage ? $relativePath : $fallbackPath);
+            $imageUrl = $saint->image_avatar_url ?? $generatedImageUrl ?? asset($hasImage ? $relativePath : $fallbackPath);
             $displayName = $saint->displayName();
             $biography = $saint->displayBiography();
             $excerpt = filled($saint->profile_summary) ? strip_tags((string) $saint->profile_summary) : $biography;
@@ -36,7 +36,7 @@
             @endif
             <a wire:navigate class="search-result-link" href="{{ route('saints.profile', $saint) }}">
                 <span class="search-result-image-wrapper">
-                    <img class="search-result-image" src="{{ $imageUrl }}" alt="">
+                    <img class="search-result-image {{ $saint->image_avatar_url ? 'search-result-image--avatar' : '' }}" src="{{ $imageUrl }}" alt="">
                 </span>
                 <span class="search-result-content">
                     <span class="search-result-title">

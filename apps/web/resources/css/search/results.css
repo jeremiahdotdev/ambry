@@ -327,6 +327,11 @@
     width: auto;
 }
 
+/* Saved avatars contain the top 11rem of the original 20rem image. */
+.search-result-image--avatar {
+    height: 11rem;
+}
+
 .search-result-content {
     display: flex;
     flex: 1;

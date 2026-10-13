@@ -45,6 +45,7 @@ create table saints (
     image_cutout_url varchar,
     image_portrait_url varchar,
     image_thumb_url varchar,
+    image_avatar_url text,
     image_page_variant varchar,
     image_key_colors json,
     image_variant_reason text,

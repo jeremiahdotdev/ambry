@@ -6,6 +6,7 @@ select
     s.birth_year,
     s.death_year,
     coalesce(nullif(s.profile_summary, ''), left(coalesce(s.biography, ''), 250)) as summary,
+    s.image_avatar_url,
     coalesce(jsonb_agg(distinct jsonb_build_object('month', fd.month, 'day', fd.day, 'name', fd.calendar)) filter (where fd.id is not null), '[]'::jsonb) as feast_days,
     coalesce(array_remove(array_agg(distinct p.name), null::varchar), '{}') as patronages,
     coalesce(array_remove(array_agg(distinct ro.name), null::varchar), '{}') as religious_orders

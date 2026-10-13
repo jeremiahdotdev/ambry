@@ -135,6 +135,7 @@ class SaintSearchService
             'image_cutout_url',
             'image_portrait_url',
             'image_thumb_url',
+            'image_avatar_url',
             'image_page_variant',
             'image_key_colors',
             'image_variant_reason',

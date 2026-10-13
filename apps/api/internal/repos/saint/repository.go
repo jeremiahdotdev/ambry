@@ -71,7 +71,7 @@ func (r PostgresRepository) Search(ctx context.Context, filters SearchFilters) (
 	for rows.Next() {
 		var item SearchResult
 		var feastJSON []byte
-		if err := rows.Scan(&item.ID, &item.PrimaryName, &item.Slug, &item.CanonicalStatus, &item.BirthYear, &item.DeathYear, &item.Summary, &feastJSON, &item.Patronages, &item.ReligiousOrders); err != nil {
+		if err := rows.Scan(&item.ID, &item.PrimaryName, &item.Slug, &item.CanonicalStatus, &item.BirthYear, &item.DeathYear, &item.Summary, &item.ImageAvatarURL, &feastJSON, &item.Patronages, &item.ReligiousOrders); err != nil {
 			return SearchPage{}, err
 		}
 		if err := json.Unmarshal(feastJSON, &item.FeastDays); err != nil {
@@ -149,7 +149,7 @@ func getBySlug(ctx context.Context, tx pgx.Tx, slug string) (Detail, error) {
 	var detail Detail
 	var locationsJSON []byte
 	var titlesJSON []byte
-	err := tx.QueryRow(ctx, getBySlugSQL, slug).Scan(&detail.ID, &detail.PrimaryName, &detail.Slug, &detail.CanonicalStatus, &detail.Biography, &detail.BirthYear, &detail.DeathYear, &detail.ImagePortraitURL, &locationsJSON, &titlesJSON)
+	err := tx.QueryRow(ctx, getBySlugSQL, slug).Scan(&detail.ID, &detail.PrimaryName, &detail.Slug, &detail.CanonicalStatus, &detail.Biography, &detail.BirthYear, &detail.DeathYear, &detail.ImagePortraitURL, &detail.ImageAvatarURL, &locationsJSON, &titlesJSON)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Detail{}, ErrNotFound
 	}

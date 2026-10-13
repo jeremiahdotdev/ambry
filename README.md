@@ -126,3 +126,41 @@ The frontend bundle does not import Composer dependencies. Laravel serves Livewi
 The Go API has its own `apps/api/vercel.json`. Deploy it as a separate Vercel project with the project root set to `apps/api`, or use its Dockerfile on a conventional host.
 
 Both apps should point at the same production database. The Laravel app runs core migrations; the Go-owned saint-of-the-day SQL migration must also be applied explicitly before deploying that endpoint.
+
+## Saved saint avatars
+
+`saints.image_avatar_url` is separate from the original cutout, portrait, and thumbnail URLs.
+The Python backfill uses the same thumbnail/fallback as the search list, retaining its full
+width and top 55% (the desktop CSS clips a 20rem image to 11rem). It preserves transparency
+and aspect ratio and limits the PNG to 512px per edge. Mobile results clip this same avatar
+further to 9.4rem. Profiles continue using the original portrait; API detail, search, and
+saint-of-the-day responses expose `image_avatar_url` when populated.
+
+From the repository root:
+
+```bash
+cd apps/web
+php artisan migrate --path=database/migrations/2026_10_13_000001_add_image_avatar_url_to_saints_table.php
+python3 -m venv /tmp/ambry-avatars-venv
+/tmp/ambry-avatars-venv/bin/pip install -r database/scripts/requirements-saint-avatars.txt
+/tmp/ambry-avatars-venv/bin/python database/scripts/backfill_saint_avatars.py --limit 5 --preview-dir /tmp/saint-avatar-previews
+/tmp/ambry-avatars-venv/bin/python database/scripts/backfill_saint_avatars.py --apply
+```
+
+The script loads `apps/web/.env` without overriding exported variables. It uses `DB_URL`
+or `DATABASE_URL` and needs `BLOB_READ_WRITE_TOKEN` for `--apply`. Use `--env-file` for
+another environment, or `--database` for a PostgreSQL URL or existing SQLite file.
+The default is a dry run: it reads and crops, but does not upload or update the DB.
+`--slug` selects one saint; `--limit` caps the run; existing avatars are skipped unless
+`--force` is supplied. Failures are reported per saint and produce a nonzero exit status;
+rerun to resume. Each successful upload commits only `image_avatar_url`, with a guard
+against concurrent edits. Original image files, URLs, and other saint fields are unchanged.
+Uploaded PNGs use a separate content-addressed `saints/<id>/avatars/` path.
+The [Vercel Blob upload implementation](https://github.com/vercel/storage/blob/main/packages/blob/src/put.ts)
+is the reference for the Python uploader's HTTP format. No OpenAI calls are made.
+
+Local script tests (no database services or Blob credentials required):
+
+```bash
+/tmp/ambry-avatars-venv/bin/python -m unittest discover -s database/scripts -p 'test_saint_avatars.py'
+```

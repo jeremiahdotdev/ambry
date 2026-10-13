@@ -14,6 +14,7 @@ type FeastDay struct {
 }
 
 type SearchResult struct {
+	ImageAvatarURL  *string    `json:"image_avatar_url,omitempty" doc:"Public pre-cropped saint avatar URL when available."`
 	ID              string     `json:"id" doc:"Saint UUID." example:"e7bc3ba9-cb92-5d62-bfcd-e321ab09254b"`
 	PrimaryName     string     `json:"primary_name" doc:"Primary display name." example:"St. Patrick"`
 	Slug            string     `json:"slug" doc:"Stable URL slug." example:"st-patrick"`
@@ -27,6 +28,7 @@ type SearchResult struct {
 }
 
 type Detail struct {
+	ImageAvatarURL   *string    `json:"image_avatar_url,omitempty" doc:"Public pre-cropped saint avatar URL when available."`
 	ImagePortraitURL *string    `json:"image_portrait_url,omitempty" doc:"Public portrait image URL when available."`
 	ID               string     `json:"id" doc:"Saint UUID."`
 	PrimaryName      string     `json:"primary_name" doc:"Primary display name."`

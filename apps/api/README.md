@@ -333,7 +333,7 @@ vercel build
 
 The initial implementation uses safe case-insensitive matching with `lower(...) like $n` across primary names, aliases, biography, patronages, and religious orders. The repository is structured so PostgreSQL full-text search or trigram indexes can be added later without changing handler contracts.
 
-Current sort options:
+Current sort options include:
 
 - `name`
 - `birth_year`
